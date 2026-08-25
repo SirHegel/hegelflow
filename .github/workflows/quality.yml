@@ -1,0 +1,61 @@
+name: Calidad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://hegelflow@127.0.0.1:5432/hegelflow_test
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: hegelflow
+          POSTGRES_DB: hegelflow_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hegelflow -d hegelflow_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v5
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Instalar dependencias reproducibles
+        run: npm ci
+      - name: Verificar secretos
+        run: npm run audit:secrets
+      - name: Lint
+        run: npm run lint
+      - name: Tipos
+        run: npm run typecheck
+      - name: Migración en PostgreSQL limpio
+        run: npm run db:migrate
+      - name: Integración PostgreSQL y aislamiento
+        run: npm run test:integration
+      - name: Pruebas unitarias y cobertura
+        run: npm run test:coverage
+      - name: Build de producción
+        run: npm run build
+      - name: Dependencias vulnerables
+        run: npm audit --audit-level=high
