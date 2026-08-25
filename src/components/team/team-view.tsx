@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check,
   Crown,
   KeyRound,
   LoaderCircle,
@@ -42,6 +41,22 @@ const roleDescription: Record<string, string> = {
   MEMBER: "Ejecuta y colabora",
   VIEWER: "Consulta sin modificar",
 };
+
+const accessAreas = ["Tableros y tareas", "Sprints", "Equipo", "Auditoría", "Configuración"] as const;
+const accessMatrix = [
+  { role: "OWNER", access: ["Gestiona", "Gestiona", "Gestiona", "Consulta", "Gestiona"] },
+  { role: "ADMIN", access: ["Gestiona", "Gestiona", "Gestiona", "Sin acceso", "Gestiona"] },
+  { role: "MEMBER", access: ["Colabora", "Consulta", "Consulta", "Sin acceso", "Personal"] },
+  { role: "VIEWER", access: ["Consulta", "Consulta", "Consulta", "Sin acceso", "Sin acceso"] },
+] as const;
+
+const accessModeStyles = {
+  Gestiona: "bg-emerald-50 text-emerald-700",
+  Colabora: "bg-blue-50 text-blue-700",
+  Consulta: "bg-slate-100 text-slate-600",
+  Personal: "bg-violet-50 text-violet-700",
+  "Sin acceso": "bg-slate-50 text-slate-400",
+} as const;
 
 export function TeamView({ members, context }: { members: TeamMember[]; context: WorkspaceContext }) {
   const router = useRouter();
@@ -98,19 +113,33 @@ export function TeamView({ members, context }: { members: TeamMember[]; context:
                 </div>
                 {canManage && member.accessLevel !== "OWNER" ? <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={`Editar ${member.fullName}`}><UserRoundCog className="size-4" /></button> : null}
               </div>
-              <div className="mt-6"><div className="flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-500">Capacidad utilizada</span><span className={over ? "font-bold text-rose-600" : "font-bold text-slate-700"}>{utilization}%</span></div><Progress value={percent(member.activePoints, member.capacityPoints)} className="mt-2" barClassName={over ? "bg-rose-500" : utilization > 75 ? "bg-amber-500" : "bg-violet-500"} /><div className="mt-2 flex justify-between text-[10px] text-slate-400"><span>{member.activePoints}/{member.capacityPoints} puntos</span><span>{member.openTasks} tareas abiertas</span></div></div>
-              <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4"><div><p className="text-xl font-bold text-slate-900">{member.openTasks}</p><p className="text-[10px] text-slate-400">En curso</p></div><div><p className="text-xl font-bold text-slate-900">{member.completedTasks}</p><p className="text-[10px] text-slate-400">Completadas</p></div></div>
+              <div className="mt-6"><div className="flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-500">Capacidad utilizada</span><span className={over ? "font-bold text-rose-600" : "font-bold text-slate-700"}>{utilization}%</span></div><Progress value={percent(member.activePoints, member.capacityPoints)} className="mt-2" barClassName={over ? "bg-rose-500" : utilization > 75 ? "bg-amber-500" : "bg-violet-500"} /><div className="mt-2 flex justify-between gap-3 text-[11px] text-slate-400"><span>{member.activePoints}/{member.capacityPoints} puntos</span><span className="text-right">{member.openTasks} tareas abiertas</span></div></div>
+              <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4"><div><p className="text-xl font-bold text-slate-900">{member.openTasks}</p><p className="text-[11px] text-slate-400">En curso</p></div><div><p className="text-xl font-bold text-slate-900">{member.completedTasks}</p><p className="text-[11px] text-slate-400">Completadas</p></div></div>
             </article>
           );
         })}
       </section>
 
       <section className="surface overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6"><div><h2 className="text-sm font-bold text-slate-900">Matriz de acceso</h2><p className="mt-0.5 text-xs text-slate-400">Permisos técnicos, independientes del cargo</p></div><ShieldCheck className="size-5 text-violet-600" /></div>
-        <div className="app-scrollbar overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-xs"><thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400"><tr><th className="px-6 py-3.5">Nivel</th><th className="px-4 py-3.5">Tableros y tareas</th><th className="px-4 py-3.5">Sprints</th><th className="px-4 py-3.5">Equipo</th><th className="px-4 py-3.5">Auditoría</th><th className="px-4 py-3.5">Configuración</th></tr></thead><tbody className="divide-y divide-slate-100">{[
-            ["OWNER", true, true, true, true, true], ["ADMIN", true, true, true, false, true], ["MEMBER", true, false, false, false, false], ["VIEWER", false, false, false, false, false],
-          ].map(([role, ...permissions]) => <tr key={String(role)}><td className="px-6 py-4"><p className="font-bold text-slate-800">{String(role)}</p><p className="mt-0.5 text-[10px] text-slate-400">{roleDescription[String(role)]}</p></td>{permissions.map((allowed, index) => <td key={index} className="px-4 py-4">{allowed ? <span className="grid size-6 place-items-center rounded-full bg-emerald-50 text-emerald-600"><Check className="size-3.5" /></span> : <span className="text-slate-300">—</span>}</td>)}</tr>)}</tbody></table>
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6"><div><h2 className="text-sm font-bold text-slate-900">Matriz de acceso</h2><p className="mt-0.5 text-xs text-slate-400">Capacidades de gestión y consulta por nivel</p></div><ShieldCheck className="size-5 text-violet-600" /></div>
+        <div className="divide-y divide-slate-100 md:hidden">
+          {accessMatrix.map(({ role, access }) => (
+            <article key={role} className="px-5 py-4">
+              <h3 className="text-xs font-bold text-slate-800">{role}</h3>
+              <p className="mt-0.5 text-[11px] text-slate-500">{roleDescription[role]}</p>
+              <dl className="mt-3 grid gap-2">
+                {accessAreas.map((area, index) => (
+                  <div key={area} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                    <dt className="min-w-0 break-words text-[11px] font-medium text-slate-600">{area}</dt>
+                    <dd className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold ${accessModeStyles[access[index]]}`}><span className="size-1.5 rounded-full bg-current" aria-hidden="true" />{access[index]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))}
+        </div>
+        <div className="app-scrollbar hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[700px] text-left text-xs"><thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-400"><tr><th className="px-6 py-3.5">Nivel</th>{accessAreas.map((area) => <th key={area} className="px-4 py-3.5">{area}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{accessMatrix.map(({ role, access }) => <tr key={role}><td className="px-6 py-4"><p className="font-bold text-slate-800">{role}</p><p className="mt-0.5 text-[11px] text-slate-400">{roleDescription[role]}</p></td>{access.map((mode, index) => <td key={accessAreas[index]} className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-bold ${accessModeStyles[mode]}`}><span className="size-1.5 rounded-full bg-current" aria-hidden="true" />{mode}</span></td>)}</tr>)}</tbody></table>
         </div>
       </section>
 
@@ -120,12 +149,12 @@ export function TeamView({ members, context }: { members: TeamMember[]; context:
       </section>
 
       {showCreate ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto overscroll-contain bg-slate-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-profile-title" onKeyDown={(event) => { if (event.key === "Escape") setShowCreate(false); }}>
           <button className="absolute inset-0" onClick={() => setShowCreate(false)} aria-label="Cerrar" />
-          <form onSubmit={createProfile} className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-violet-600">Delegación</p><h2 className="mt-1 text-xl font-bold text-slate-950">Crear perfil de trabajo</h2></div><button type="button" onClick={() => setShowCreate(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X className="size-4" /></button></div>
+          <form onSubmit={createProfile} className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-violet-600">Delegación</p><h2 id="create-profile-title" className="mt-1 text-xl font-bold text-slate-950">Crear perfil de trabajo</h2></div><button type="button" onClick={() => setShowCreate(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Cerrar formulario de perfil"><X className="size-4" /></button></div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <FormField label="Nombre completo"><input name="fullName" required minLength={2} maxLength={120} className="form-input" placeholder="Nombre y apellido" /></FormField>
+              <FormField label="Nombre completo"><input name="fullName" autoFocus required minLength={2} maxLength={120} className="form-input" placeholder="Nombre y apellido" /></FormField>
               <FormField label="Cargo"><input name="workRole" required maxLength={120} className="form-input" placeholder="Ej. Product Owner" /></FormField>
               <FormField label="Correo (opcional)"><input name="email" type="email" maxLength={255} className="form-input" placeholder="nombre@ejemplo.com" /></FormField>
               <FormField label="Nivel de acceso"><select name="accessLevel" defaultValue="MEMBER" className="form-input"><option value="ADMIN">Administrador</option><option value="MEMBER">Miembro</option><option value="VIEWER">Observador</option></select></FormField>

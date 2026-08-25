@@ -171,12 +171,12 @@ export function BacklogView({ data, context }: { data: BacklogData; context: Wor
       </section>
 
       {showCreateSprint ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto overscroll-contain bg-slate-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-sprint-title" onKeyDown={(event) => { if (event.key === "Escape") setShowCreateSprint(false); }}>
           <button className="absolute inset-0" onClick={() => setShowCreateSprint(false)} aria-label="Cerrar" />
-          <form onSubmit={createSprint} className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-violet-600">Scrum</p><h2 className="mt-1 text-xl font-bold text-slate-950">Crear sprint</h2></div><button type="button" onClick={() => setShowCreateSprint(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X className="size-4" /></button></div>
+          <form onSubmit={createSprint} className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-violet-600">Scrum</p><h2 id="create-sprint-title" className="mt-1 text-xl font-bold text-slate-950">Crear sprint</h2></div><button type="button" onClick={() => setShowCreateSprint(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Cerrar formulario de sprint"><X className="size-4" /></button></div>
             <div className="mt-6 space-y-4">
-              <label className="block text-xs font-bold text-slate-600">Nombre<input name="name" required maxLength={120} placeholder={`Sprint ${data.sprints.length + 1}`} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></label>
+              <label className="block text-xs font-bold text-slate-600">Nombre<input name="name" autoFocus required maxLength={120} placeholder={`Sprint ${data.sprints.length + 1}`} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></label>
               <label className="block text-xs font-bold text-slate-600">Objetivo<textarea name="goal" rows={3} maxLength={2000} placeholder="¿Qué resultado concreto perseguirá el equipo?" className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-xs font-bold text-slate-600">Inicio<input name="startDate" type="date" className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" /></label>
@@ -205,12 +205,12 @@ function SprintSection({ sprint, tasks, members, allSprints, movingId, onAssign,
   const done = sumPoints(tasks.filter((task) => task.completedAt));
   return (
     <details open={emphasized} className={cn("surface overflow-hidden", emphasized && "border-violet-200 ring-1 ring-violet-100")}>
-      <summary className="flex cursor-pointer list-none flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between [&::-webkit-details-marker]:hidden">
-        <div className="flex items-center gap-3">
-          <div className={cn("grid size-9 place-items-center rounded-xl", emphasized ? "bg-violet-100 text-violet-600" : "bg-slate-100 text-slate-500")}><Target className="size-4" /></div>
-          <div><div className="flex items-center gap-2"><h2 className="text-sm font-bold text-slate-900">{sprint.name}</h2><Badge color={emphasized ? "#6d5dfc" : undefined}>{emphasized ? "Activo" : "Planeado"}</Badge></div><p className="mt-0.5 max-w-xl truncate text-[11px] text-slate-400">{sprint.goal || "Sin objetivo definido"}</p></div>
+      <summary className="flex cursor-pointer list-none flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 [&::-webkit-details-marker]:hidden">
+        <div className="flex min-w-0 items-start gap-3 sm:flex-1">
+          <div className={cn("grid size-9 shrink-0 place-items-center rounded-xl", emphasized ? "bg-violet-100 text-violet-600" : "bg-slate-100 text-slate-500")}><Target className="size-4" /></div>
+          <div className="min-w-0 flex-1"><div className="flex min-w-0 flex-wrap items-center gap-2"><h2 className="min-w-0 break-words text-sm font-bold text-slate-900">{sprint.name}</h2><Badge color={emphasized ? "#6d5dfc" : undefined}>{emphasized ? "Activo" : "Planeado"}</Badge></div><p className="mt-1 line-clamp-2 max-w-xl break-words text-xs leading-5 text-slate-500">{sprint.goal || "Sin objetivo definido"}</p></div>
         </div>
-        <div className="flex items-center gap-4"><div className="hidden w-28 sm:block"><Progress value={percent(done, total)} /><p className="mt-1 text-right text-[9px] text-slate-400">{done}/{total} pts</p></div><span className="text-xs font-semibold text-slate-500">{tasks.length} elementos</span><ChevronDown className="size-4 text-slate-400" /></div>
+        <div className="flex w-full shrink-0 items-center justify-between gap-4 pl-12 sm:w-auto sm:justify-start sm:pl-0"><div className="hidden w-28 sm:block"><Progress value={percent(done, total)} /><p className="mt-1 text-right text-[11px] text-slate-400">{done}/{total} pts</p></div><span className="text-xs font-semibold text-slate-500">{tasks.length} elementos</span><ChevronDown className="size-4 shrink-0 text-slate-400" /></div>
       </summary>
       <div className="divide-y divide-slate-100 border-t border-slate-100">
         {tasks.map((task) => <BacklogRow key={task.id} task={task} members={members} allSprints={allSprints} moving={movingId === task.id} onAssign={onAssign} canEdit={canEdit} />)}
@@ -230,23 +230,23 @@ function BacklogRow({ task, allSprints, moving, onAssign, canEdit }: {
 }) {
   const TypeIcon = typeIcons[task.taskType];
   return (
-    <div className="flex flex-col gap-3 px-5 py-3.5 transition hover:bg-slate-50/70 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 px-4 py-3.5 transition hover:bg-slate-50/70 sm:flex-row sm:items-center sm:px-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <TypeIcon className="size-4 shrink-0" style={{ color: priorityColor[task.priority] }} />
-        <span className="w-16 shrink-0 text-[10px] font-bold text-violet-600">{task.key}</span>
-        <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{task.title}</p><div className="mt-1 flex gap-1">{task.labels.slice(0, 2).map((label) => <span key={label.id} className="size-1.5 rounded-full" style={{ backgroundColor: label.color }} />)}</div></div>
+        <span className="w-14 shrink-0 text-[11px] font-bold text-violet-600 sm:w-16">{task.key}</span>
+        <div className="min-w-0 flex-1"><p className="line-clamp-2 break-words text-xs font-semibold leading-5 text-slate-800 sm:truncate">{task.title}</p><div className="mt-1 flex gap-1">{task.labels.slice(0, 2).map((label) => <span key={label.id} className="size-1.5 rounded-full" style={{ backgroundColor: label.color }} />)}</div></div>
       </div>
-      <div className="flex items-center gap-3 pl-7 sm:pl-0">
-        {task.dueDate ? <span className="hidden items-center gap-1 text-[10px] text-slate-400 md:inline-flex"><CalendarDays className="size-3" /> {formatDate(task.dueDate)}</span> : null}
+      <div className="flex min-w-0 flex-wrap items-center gap-3 pl-7 sm:flex-nowrap sm:pl-0">
+        {task.dueDate ? <span className="hidden items-center gap-1 text-[11px] text-slate-400 md:inline-flex"><CalendarDays className="size-3" /> {formatDate(task.dueDate)}</span> : null}
         <div className="flex -space-x-1.5">{task.assignees.slice(0, 3).map((person) => <Avatar key={person.id} name={person.fullName} color={person.avatarColor} size="xs" />)}</div>
-        <span className="w-10 text-center text-[10px] font-bold text-slate-600">{task.storyPoints ?? "—"} pts</span>
+        <span className="w-10 shrink-0 text-center text-[11px] font-bold text-slate-600">{task.storyPoints ?? "—"} pts</span>
         {canEdit ? (
           <select
             aria-label={`Asignar sprint a ${task.title}`}
             value={task.sprintId ?? ""}
             disabled={moving}
             onChange={(event) => onAssign(task, event.target.value || null)}
-            className="h-8 max-w-36 rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-600 outline-none disabled:opacity-50"
+            className="h-8 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-600 outline-none disabled:opacity-50 sm:max-w-36 sm:flex-none"
           >
             <option value="">Backlog</option>
             {allSprints.filter((sprint) => sprint.status === "ACTIVE" || sprint.status === "PLANNED").map((sprint) => <option key={sprint.id} value={sprint.id}>{sprint.name}</option>)}

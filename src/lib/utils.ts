@@ -33,8 +33,18 @@ export function formatRelativeDate(value: string) {
   return formatDate(value, { day: "numeric", month: "short", year: "numeric" });
 }
 
+export function dateKeyInTimeZone(date = new Date(), timeZone = "America/Bogota") {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = (type: "year" | "month" | "day") => parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 export function percent(value: number, total: number) {
   if (total <= 0) return 0;
   return Math.min(100, Math.max(0, Math.round((value / total) * 100)));
 }
-

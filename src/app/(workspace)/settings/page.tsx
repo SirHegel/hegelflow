@@ -12,5 +12,5 @@ export default async function SettingsPage() {
     context.membershipId,
     context.accessLevel,
   );
-  return <SettingsView data={data} context={context} sessionExpiresAt={session.expiresAt.toISOString()} />;
+  return <SettingsView data={data} context={context} sessionExpiresAt={session.expiresAt.toISOString()} timeZone={session.user.timezone} />;
 }

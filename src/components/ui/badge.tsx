@@ -11,7 +11,7 @@ export function Badge({ children, color, className }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600",
+        "inline-flex max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-600",
         className,
       )}
       style={color ? { backgroundColor: `${color}18`, color } : undefined}
@@ -20,4 +20,3 @@ export function Badge({ children, color, className }: BadgeProps) {
     </span>
   );
 }
-

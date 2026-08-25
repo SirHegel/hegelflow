@@ -223,7 +223,7 @@ function ChartCard({
           <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
         </div>
         {badge ? (
-          <span className="w-fit shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+          <span className="w-fit shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">
             {badge}
           </span>
         ) : null}
@@ -257,21 +257,26 @@ function AccessibleTable({
   rows: readonly (readonly (string | number)[])[];
 }) {
   return (
-    <table className="sr-only">
-      <caption>{caption}</caption>
-      <thead>
-        <tr>{headers.map((header) => <th key={header} scope="col">{header}</th>)}</tr>
-      </thead>
-      <tbody>
-        {rows.map((row, rowIndex) => (
-          <tr key={rowIndex}>
-            {row.map((cell, cellIndex) => cellIndex === 0
-              ? <th key={cellIndex} scope="row">{cell}</th>
-              : <td key={cellIndex}>{cell}</td>)}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    // Firefox can paint captions and cells outside a table that is itself
+    // visually hidden. Clipping a regular block wrapper keeps the complete
+    // table available to assistive technology without leaking into charts.
+    <div className="sr-only">
+      <table>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>{headers.map((header) => <th key={header} scope="col">{header}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, cellIndex) => cellIndex === 0
+                ? <th key={cellIndex} scope="row">{cell}</th>
+                : <td key={cellIndex}>{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -443,7 +448,7 @@ function StatusDistribution({ data }: { data: readonly StatusBreakdownDatum[] })
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-center" aria-hidden="true">
           <div>
             <p className="text-2xl font-black tracking-tight text-slate-950">{formatCompactNumber(total)}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">tareas</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">tareas</p>
           </div>
         </div>
       </div>
@@ -549,11 +554,11 @@ function CycleTimeCard({ averageDays, p85Days }: { averageDays: number; p85Days:
         <div className="p-4 sm:p-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Promedio</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Promedio</p>
               <p className="mt-1.5 text-2xl font-black tracking-tight text-slate-950">{formatNumber(average)} <span className="text-xs font-bold text-slate-400">días</span></p>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Percentil 85</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Percentil 85</p>
               <p className="mt-1.5 text-2xl font-black tracking-tight text-slate-950">{formatNumber(p85)} <span className="text-xs font-bold text-slate-400">días</span></p>
             </div>
           </div>

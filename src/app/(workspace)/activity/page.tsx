@@ -55,7 +55,7 @@ export default async function ActivityPage() {
                 <article key={item.id} className="relative flex gap-4 py-5">
                   {index < activity.length - 1 ? <span className="absolute bottom-0 left-[19px] top-12 w-px bg-slate-200" /> : null}
                   {item.actorName ? <Avatar name={item.actorName} color={item.actorColor} size="md" /> : <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 ring-2 ring-white"><Icon className="size-4" /></span>}
-                  <div className="min-w-0 flex-1 pt-0.5"><div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-700"><strong className="font-bold text-slate-900">{item.actorName ?? "Sistema"}</strong> {item.summary.charAt(0).toLowerCase() + item.summary.slice(1)}</p><time className="shrink-0 text-[10px] font-medium text-slate-400" dateTime={item.createdAt}>{formatRelativeDate(item.createdAt)}</time></div><div className="mt-2 flex items-center gap-2"><Badge>{item.entityType}</Badge><span className="text-[10px] text-slate-300">{item.action}</span></div></div>
+                  <div className="min-w-0 flex-1 pt-0.5"><div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><p className="min-w-0 break-words text-sm leading-5 text-slate-700"><strong className="font-bold text-slate-900">{item.actorName ?? "Sistema"}</strong> {item.summary.charAt(0).toLowerCase() + item.summary.slice(1)}</p><time className="shrink-0 text-[11px] font-medium text-slate-400" dateTime={item.createdAt}>{formatRelativeDate(item.createdAt)}</time></div><div className="mt-2 flex min-w-0 flex-wrap items-center gap-2"><Badge>{item.entityType}</Badge><span className="break-all text-[11px] text-slate-400">{item.action}</span></div></div>
                 </article>
               );
             })}
@@ -64,7 +64,7 @@ export default async function ActivityPage() {
         </section>
         <aside className="space-y-4">
           <div className="surface p-5"><div className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-600"><ShieldCheck className="size-5" /></div><h2 className="mt-4 text-sm font-bold text-slate-900">Auditoría protegida</h2><p className="mt-2 text-xs leading-5 text-slate-500">La actividad de negocio se presenta aquí. Los eventos de seguridad y acceso permanecen separados y restringidos al propietario.</p></div>
-          <div className="surface p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retención</p><p className="mt-2 text-2xl font-bold text-slate-900">Completa</p><p className="mt-1 text-xs leading-5 text-slate-500">Sin límites comerciales artificiales. La política de retención será configurable por espacio.</p></div>
+          <div className="surface p-5"><p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Retención</p><p className="mt-2 text-2xl font-bold text-slate-900">Completa</p><p className="mt-1 text-xs leading-5 text-slate-500">Sin límites comerciales artificiales. La política de retención será configurable por espacio.</p></div>
         </aside>
       </div>
     </div>

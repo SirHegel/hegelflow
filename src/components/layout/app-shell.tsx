@@ -96,7 +96,7 @@ export function AppShell({ context, boards, children }: {
       </div>
 
       <div className="app-scrollbar flex-1 overflow-y-auto px-3 py-5">
-        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Espacio de trabajo</p>
+        <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Espacio de trabajo</p>
         <nav aria-label="Navegación principal" className="space-y-1">
           {nav.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -119,7 +119,7 @@ export function AppShell({ context, boards, children }: {
         </nav>
 
         <div className="mt-7 flex items-center justify-between px-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Tableros</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Tableros</p>
           <button className="rounded-md p-1 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label="Crear tablero">
             <Plus className="size-4" />
           </button>
@@ -180,7 +180,7 @@ export function AppShell({ context, boards, children }: {
       ) : null}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-18 items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-20 flex h-18 items-center gap-3 border-b border-slate-200 bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.02)] sm:px-6 lg:px-8">
           <button
             className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden"
             onClick={() => setMobileOpen(true)}
@@ -211,7 +211,7 @@ export function AppShell({ context, boards, children }: {
                 <Avatar name={context.fullName} color={context.avatarColor} size="sm" />
                 <span className="hidden text-left md:block">
                   <span className="block max-w-32 truncate text-xs font-bold text-slate-800">{context.fullName}</span>
-                  <span className="block text-[10px] text-slate-500">{context.workRole}</span>
+                  <span className="block text-[11px] text-slate-500">{context.workRole}</span>
                 </span>
                 <ChevronDown className="hidden size-4 text-slate-400 md:block" />
               </button>
@@ -279,7 +279,7 @@ function CommandSearch({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-950/45 px-4 pt-[12vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Buscar">
+    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-950/45 px-4 pt-[12vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Buscar" onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}>
       <button className="absolute inset-0" onClick={onClose} aria-label="Cerrar búsqueda" />
       <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-white/50 bg-white shadow-2xl shadow-slate-950/25">
         <div className="flex items-center gap-3 border-b border-slate-100 px-4">
@@ -301,7 +301,7 @@ function CommandSearch({ onClose }: { onClose: () => void }) {
               if (event.key === "Enter" && results[0]) openResult(results[0]);
             }}
           />
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar búsqueda">
             <X className="size-4" />
           </button>
         </div>
@@ -311,7 +311,7 @@ function CommandSearch({ onClose }: { onClose: () => void }) {
               {results.map((result) => (
                 <button key={result.id} onClick={() => openResult(result)} className="flex w-full items-start gap-3 rounded-xl p-3 text-left transition hover:bg-violet-50">
                   <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-600"><Columns3 className="size-4" /></span>
-                  <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{result.title}</span><span className="mt-1 block truncate text-[10px] text-slate-400">{result.key} · {result.columnName} · {result.priority}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{result.title}</span><span className="mt-1 block truncate text-[11px] text-slate-400">{result.key} · {result.columnName} · {result.priority}</span></span>
                 </button>
               ))}
             </div>

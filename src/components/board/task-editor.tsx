@@ -93,12 +93,12 @@ export function TaskEditor({ boardId, task, defaultColumn, members, labels, spri
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end bg-slate-950/40 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={task ? `Editar ${task.key}` : "Crear tarea"}>
+    <div className="fixed inset-0 z-[60] flex justify-end bg-slate-950/40 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={task ? `Editar ${task.key}` : "Crear tarea"} onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}>
       <button className="absolute inset-0 cursor-default" onClick={onClose} aria-label="Cerrar editor" />
       <div className="app-scrollbar relative h-full w-full max-w-2xl overflow-y-auto bg-[#fafafd] shadow-2xl">
-        <div className="sticky top-0 z-10 flex h-18 items-center justify-between border-b border-slate-200 bg-white/90 px-5 backdrop-blur-xl sm:px-7">
+        <div className="sticky top-0 z-10 flex h-18 items-center justify-between border-b border-slate-200 bg-white px-5 shadow-[0_1px_0_rgba(15,23,42,0.02)] sm:px-7">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-600">{task ? task.key : "Nueva tarea"}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-violet-600">{task ? task.key : "Nueva tarea"}</p>
             <h2 className="mt-0.5 text-base font-bold text-slate-900">{task ? "Detalles de la tarea" : "Añadir al flujo"}</h2>
           </div>
           <button onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Cerrar">
@@ -202,7 +202,7 @@ export function TaskEditor({ boardId, task, defaultColumn, members, labels, spri
                     <Avatar name={member.fullName} color={member.avatarColor} size="sm" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-bold text-slate-800">{member.fullName}</span>
-                      <span className="block truncate text-[10px] text-slate-400">{member.workRole}</span>
+                      <span className="block truncate text-[11px] text-slate-400">{member.workRole}</span>
                     </span>
                     <span className={cn("grid size-5 place-items-center rounded-full border", active ? "border-violet-500 bg-violet-500 text-white" : "border-slate-300 text-transparent")}>
                       <Check className="size-3" />

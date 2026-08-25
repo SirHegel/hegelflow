@@ -33,8 +33,9 @@ const typeMeta = {
   BUG: { label: "Error", icon: Bug, className: "text-rose-600" },
 };
 
-export function KanbanTaskCard({ task, onOpen, disabled = false, overlay = false }: {
+export function KanbanTaskCard({ task, todayKey, onOpen, disabled = false, overlay = false }: {
   task: TaskCardType;
+  todayKey: string;
   onOpen?: (task: TaskCardType) => void;
   disabled?: boolean;
   overlay?: boolean;
@@ -43,7 +44,7 @@ export function KanbanTaskCard({ task, onOpen, disabled = false, overlay = false
   const type = typeMeta[task.taskType];
   const TypeIcon = type.icon;
   const priority = priorityMeta[task.priority];
-  const overdue = Boolean(task.dueDate && !task.completedAt && new Date(`${task.dueDate}T23:59:59`) < new Date());
+  const overdue = Boolean(task.dueDate && !task.completedAt && task.dueDate < todayKey);
 
   const style = overlay ? undefined : {
     transform: CSS.Transform.toString(sortable.transform),
@@ -64,16 +65,16 @@ export function KanbanTaskCard({ task, onOpen, disabled = false, overlay = false
       )}
     >
       <div className="mb-2.5 flex items-center gap-2">
-        <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide", type.className)} title={type.label}>
+        <span className={cn("inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide", type.className)} title={type.label}>
           <TypeIcon className="size-3.5" /> {task.key}
         </span>
-        <span className={cn("ml-auto inline-flex items-center gap-1 text-[10px] font-bold", priority.className)} title={`Prioridad ${priority.label}`}>
+        <span className={cn("ml-auto inline-flex items-center gap-1 text-[11px] font-bold", priority.className)} title={`Prioridad ${priority.label}`}>
           <Flag className="size-3" /> {priority.label}
         </span>
         {!disabled ? <GripVertical className="size-3.5 text-slate-300 opacity-0 transition group-hover:opacity-100" aria-hidden /> : null}
       </div>
 
-      <h3 className="text-[13px] font-semibold leading-[1.42] text-slate-800">{task.title}</h3>
+      <h3 className="break-words text-[13px] font-semibold leading-[1.42] text-slate-800">{task.title}</h3>
 
       {task.labels.length ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -83,7 +84,7 @@ export function KanbanTaskCard({ task, onOpen, disabled = false, overlay = false
       ) : null}
 
       {(task.checklistTotal > 0 || task.commentCount > 0 || task.blockerCount > 0 || task.dueDate) ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[10px] font-medium text-slate-400">
+        <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[11px] font-medium text-slate-400">
           {task.dueDate ? (
             <span className={cn("inline-flex items-center gap-1", overdue && "rounded-md bg-rose-50 px-1.5 py-1 font-bold text-rose-600")}>
               {overdue ? <CircleAlert className="size-3" /> : <CalendarDays className="size-3" />}
@@ -103,11 +104,10 @@ export function KanbanTaskCard({ task, onOpen, disabled = false, overlay = false
       <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-3">
         <div className="flex -space-x-1.5">
           {task.assignees.slice(0, 3).map((person) => <Avatar key={person.id} name={person.fullName} color={person.avatarColor} size="xs" />)}
-          {!task.assignees.length ? <span className="grid size-6 place-items-center rounded-full border border-dashed border-slate-300 text-[10px] font-bold text-slate-400">?</span> : null}
+          {!task.assignees.length ? <span className="grid size-6 place-items-center rounded-full border border-dashed border-slate-300 text-[11px] font-bold text-slate-400">?</span> : null}
         </div>
-        {task.storyPoints !== null ? <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{task.storyPoints} pts</span> : null}
+        {task.storyPoints !== null ? <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">{task.storyPoints} pts</span> : null}
       </div>
     </article>
   );
 }
-

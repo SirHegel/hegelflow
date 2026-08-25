@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { percent, formatDate } from "@/lib/utils";
 import type { WorkspaceContext } from "@/lib/types";
@@ -66,14 +65,15 @@ type DashboardData = {
   }>;
 };
 
-export function DashboardView({ context, data }: { context: WorkspaceContext; data: DashboardData }) {
+export function DashboardView({ context, data, todayKey }: { context: WorkspaceContext; data: DashboardData; todayKey: string }) {
   const firstName = context.fullName.split(" ")[0];
   const sprintProgress = percent(data.metrics.completedSprintPoints, data.metrics.sprintPoints);
   const today = new Intl.DateTimeFormat("es-CO", {
     weekday: "long",
     day: "numeric",
     month: "long",
-  }).format(new Date());
+    timeZone: "UTC",
+  }).format(new Date(`${todayKey}T12:00:00.000Z`));
 
   const metricCards = [
     {
@@ -118,13 +118,13 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Buenos días, {firstName}</h1>
           <p className="mt-1.5 text-sm text-slate-500">Aquí tienes el pulso del equipo y del trabajo prioritario.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/reports">
-            <Button variant="secondary"><TrendingUp className="size-4" /> Ver reportes</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/reports" className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2">
+            <TrendingUp className="size-4" /> Ver reportes
           </Link>
           {data.boards[0] ? (
-            <Link href={`/boards/${data.boards[0].id}?new=task`}>
-              <Button><Plus className="size-4" /> Nueva tarea</Button>
+            <Link href={`/boards/${data.boards[0].id}?new=task`} className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2">
+              <Plus className="size-4" /> Nueva tarea
             </Link>
           ) : null}
         </div>
@@ -166,16 +166,16 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
               const total = board.openTasks + board.completedTasks;
               const completed = percent(board.completedTasks, total);
               return (
-                <Link key={board.id} href={`/boards/${board.id}`} className="group flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50/80 sm:px-6">
+                <Link key={board.id} href={`/boards/${board.id}`} className="group flex items-start gap-3 px-4 py-4 transition hover:bg-slate-50/80 sm:items-center sm:gap-4 sm:px-6">
                   <div className="grid size-11 shrink-0 place-items-center rounded-xl text-white shadow-sm" style={{ backgroundColor: board.color }}>
                     <FolderKanban className="size-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate text-sm font-bold text-slate-900">{board.name}</h3>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h3 className="min-w-0 break-words text-sm font-bold text-slate-900">{board.name}</h3>
                       <Badge>{board.methodology === "HYBRID" ? "Scrum + Kanban" : board.methodology}</Badge>
                     </div>
-                    <p className="mt-1 truncate text-xs text-slate-400">{board.description}</p>
+                    <p className="mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 sm:line-clamp-none">{board.description}</p>
                     <div className="mt-3 flex items-center gap-3">
                       <Progress value={completed} className="max-w-48 flex-1" />
                       <span className="text-[11px] font-semibold text-slate-500">{completed}%</span>
@@ -198,17 +198,17 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
         <div className="relative overflow-hidden rounded-2xl bg-[#202943] p-6 text-white shadow-lg shadow-slate-900/10">
           <div className="absolute -right-16 -top-16 size-48 rounded-full bg-violet-500/25 blur-2xl" />
           <div className="absolute -bottom-20 left-8 size-48 rounded-full bg-cyan-400/10 blur-3xl" />
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 rounded-lg bg-white/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-200">
+              <span className="inline-flex items-center gap-2 rounded-lg bg-white/8 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-200">
                 <Sparkles className="size-3" /> Sprint activo
               </span>
               {data.activeSprint ? <span className="text-xs text-slate-400">{data.activeSprint.daysRemaining} días restantes</span> : null}
             </div>
             {data.activeSprint ? (
               <>
-                <h2 className="mt-6 text-2xl font-bold">{data.activeSprint.name}</h2>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-slate-300">{data.activeSprint.goal ?? "Sin objetivo definido."}</p>
+                <h2 className="mt-6 break-words text-2xl font-bold">{data.activeSprint.name}</h2>
+                <p className="mt-2 min-h-12 break-words text-sm leading-6 text-slate-300">{data.activeSprint.goal ?? "Sin objetivo definido."}</p>
                 <div className="mt-7 flex items-end justify-between">
                   <div>
                     <p className="text-4xl font-bold tracking-tight">{sprintProgress}%</p>
@@ -255,12 +255,12 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
                     <Avatar name={person.fullName} color={person.avatarColor} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-bold text-slate-900">{person.fullName}</p>
-                      <p className="truncate text-[10px] text-slate-400">{person.workRole}</p>
+                      <p className="truncate text-[11px] text-slate-400">{person.workRole}</p>
                     </div>
                     <span className={`text-xs font-bold ${overloaded ? "text-rose-600" : "text-slate-700"}`}>{utilization}%</span>
                   </div>
                   <Progress value={utilization} className="mt-4" barClassName={overloaded ? "bg-rose-500" : utilization > 75 ? "bg-amber-500" : "bg-violet-500"} />
-                  <div className="mt-2 flex justify-between text-[10px] text-slate-400">
+                  <div className="mt-2 flex justify-between text-[11px] text-slate-400">
                     <span>{person.taskCount} tareas</span>
                     <span>{person.assignedPoints}/{person.capacityPoints} pts</span>
                   </div>
@@ -280,17 +280,17 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
           </div>
           <div className="divide-y divide-slate-100 px-5 sm:px-6">
             {data.dueSoon.length ? data.dueSoon.map((task) => {
-              const overdue = new Date(`${task.dueDate}T23:59:59`) < new Date();
+              const overdue = task.dueDate < todayKey;
               return (
                 <Link key={task.id} href={`/boards/${task.boardId}?task=${task.id}`} className="group flex items-center gap-3 py-3.5">
                   <div className={`grid size-9 shrink-0 place-items-center rounded-xl ${overdue ? "bg-rose-50 text-rose-600" : "bg-violet-50 text-violet-600"}`}>
                     <CalendarClock className="size-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-violet-700">{task.title}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">{task.key} · {task.assigneeName ?? "Sin asignar"}</p>
+                    <p className="line-clamp-2 break-words text-xs font-semibold leading-5 text-slate-800 group-hover:text-violet-700 sm:truncate">{task.title}</p>
+                    <p className="mt-0.5 break-words text-[11px] text-slate-400">{task.key} · {task.assigneeName ?? "Sin asignar"}</p>
                   </div>
-                  <span className={`shrink-0 text-[10px] font-bold ${overdue ? "text-rose-600" : "text-slate-500"}`}>{formatDate(task.dueDate)}</span>
+                  <span className={`shrink-0 text-[11px] font-bold ${overdue ? "text-rose-600" : "text-slate-500"}`}>{formatDate(task.dueDate)}</span>
                 </Link>
               );
             }) : (
@@ -304,9 +304,9 @@ export function DashboardView({ context, data }: { context: WorkspaceContext; da
         </div>
       </section>
 
-      <footer className="flex items-center justify-between border-t border-slate-200 pt-5 text-[11px] text-slate-400">
-        <span>HegelFlow · {context.workspaceName}</span>
-        <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" /> {data.workload.length} perfiles activos</span>
+      <footer className="flex flex-col gap-2 border-t border-slate-200 pt-5 text-[11px] text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <span className="min-w-0 break-words">HegelFlow · {context.workspaceName}</span>
+        <span className="inline-flex shrink-0 items-center gap-1.5"><Users className="size-3.5" /> {data.workload.length} perfiles activos</span>
       </footer>
     </div>
   );

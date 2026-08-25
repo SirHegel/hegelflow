@@ -4,12 +4,13 @@ import { Suspense } from "react";
 import { KanbanBoard } from "@/components/board/kanban-board";
 import { getBoardData } from "@/lib/data";
 import { requirePageContext } from "@/lib/page-context";
+import { dateKeyInTimeZone } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Tablero" };
 
 export default async function BoardPage({ params }: PageProps<"/boards/[boardId]">) {
   const { boardId } = await params;
-  const { context } = await requirePageContext();
+  const { context, session } = await requirePageContext();
   const data = await getBoardData(boardId, context.workspaceId, context.membershipId, context.accessLevel);
   if (!data) notFound();
 
@@ -19,6 +20,8 @@ export default async function BoardPage({ params }: PageProps<"/boards/[boardId]
         key={data.tasks.map((task) => `${task.id}:${task.version}`).join("|")}
         initialData={data}
         context={context}
+        initialTodayKey={dateKeyInTimeZone(new Date(), session.user.timezone)}
+        timeZone={session.user.timezone}
       />
     </Suspense>
   );

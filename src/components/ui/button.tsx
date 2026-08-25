@@ -24,7 +24,7 @@ export function Button({ className, variant = "primary", size = "md", type = "bu
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center font-semibold transition disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "inline-flex items-center justify-center whitespace-nowrap font-semibold transition disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         variants[variant],
         sizes[size],
         className,
@@ -33,4 +33,3 @@ export function Button({ className, variant = "primary", size = "md", type = "bu
     />
   );
 }
-
