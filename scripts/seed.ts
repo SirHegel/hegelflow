@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import postgres from "postgres";
+import { prepareDatabaseConnection } from "../src/lib/database-url";
 
 const databaseUrl = process.env.DATABASE_URL;
 const configuredAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
@@ -11,11 +12,11 @@ if (!configuredAdminPassword || configuredAdminPassword.length < 12) {
 }
 const adminPassword: string = configuredAdminPassword;
 
-const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
-const sql = postgres(databaseUrl, {
+const connection = prepareDatabaseConnection(databaseUrl);
+const sql = postgres(connection.url, {
   max: 1,
   prepare: false,
-  ssl: isLocal ? false : "require",
+  ssl: connection.ssl,
 });
 
 async function main() {
@@ -35,7 +36,7 @@ try {
 
     const [workspace] = await tx<{ id: string }[]>`
       INSERT INTO workspaces (name, slug, description, logo_mark)
-      VALUES ('HegelFlow Empresa', 'hegelflow-empresa', 'Gestión central de producto, operaciones y equipo.', 'HF')
+      VALUES ('HegelFlow Personal', 'hegelflow-personal', 'Gestión personal de producto, operaciones y colaboradores.', 'HF')
       ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
       RETURNING id
     `;

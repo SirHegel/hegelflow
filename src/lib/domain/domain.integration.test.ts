@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getActivity, getReportData, getSettingsData, getWorkspaceBoards } from "@/lib/data";
+import { prepareDatabaseConnection } from "@/lib/database-url";
 import { db } from "@/lib/db";
 import { createTask, moveTask, updateTask } from "@/lib/domain/tasks";
 import type { WorkspaceContext } from "@/lib/types";
@@ -10,11 +11,11 @@ import type { WorkspaceContext } from "@/lib/types";
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL es obligatorio para las pruebas de integración.");
 
-const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
-const fixtureSql = postgres(databaseUrl, {
+const connection = prepareDatabaseConnection(databaseUrl);
+const fixtureSql = postgres(connection.url, {
   max: 1,
   prepare: false,
-  ssl: isLocal ? false : "require",
+  ssl: connection.ssl,
 });
 
 const ids: Record<string, string> = {};

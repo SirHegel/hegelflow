@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: "HegelFlow",
     template: "%s · HegelFlow",
   },
-  description: "Gestión empresarial con Scrum y Kanban, sin límites comerciales artificiales.",
+  description: "Gestión personal con Scrum y Kanban, sin límites comerciales artificiales.",
   applicationName: "HegelFlow",
   robots: {
     index: false,

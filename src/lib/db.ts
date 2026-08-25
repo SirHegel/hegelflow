@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { prepareDatabaseConnection } from "@/lib/database-url";
 import { getServerEnv } from "@/lib/env";
 
 type SqlClient = ReturnType<typeof postgres>;
@@ -10,18 +11,17 @@ const globalForDb = globalThis as typeof globalThis & {
 export function db(): SqlClient {
   if (!globalForDb.hegelflowSql) {
     const { DATABASE_URL } = getServerEnv();
-    const isLocal = /localhost|127\.0\.0\.1/.test(DATABASE_URL);
+    const connection = prepareDatabaseConnection(DATABASE_URL);
 
-    globalForDb.hegelflowSql = postgres(DATABASE_URL, {
+    globalForDb.hegelflowSql = postgres(connection.url, {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 15,
       prepare: false,
-      ssl: isLocal ? false : "require",
+      ssl: connection.ssl,
       transform: { undefined: null },
     });
   }
 
   return globalForDb.hegelflowSql;
 }
-

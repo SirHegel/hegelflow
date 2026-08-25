@@ -127,7 +127,7 @@ export function TeamView({ members, context }: { members: TeamMember[]; context:
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <FormField label="Nombre completo"><input name="fullName" required minLength={2} maxLength={120} className="form-input" placeholder="Nombre y apellido" /></FormField>
               <FormField label="Cargo"><input name="workRole" required maxLength={120} className="form-input" placeholder="Ej. Product Owner" /></FormField>
-              <FormField label="Correo (opcional)"><input name="email" type="email" maxLength={255} className="form-input" placeholder="nombre@empresa.com" /></FormField>
+              <FormField label="Correo (opcional)"><input name="email" type="email" maxLength={255} className="form-input" placeholder="nombre@ejemplo.com" /></FormField>
               <FormField label="Nivel de acceso"><select name="accessLevel" defaultValue="MEMBER" className="form-input"><option value="ADMIN">Administrador</option><option value="MEMBER">Miembro</option><option value="VIEWER">Observador</option></select></FormField>
               <FormField label="Capacidad por sprint"><input name="capacityPoints" type="number" min="0" max="500" defaultValue="20" className="form-input" /></FormField>
             </div>

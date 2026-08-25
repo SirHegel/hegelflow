@@ -1,17 +1,23 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import postgres from "postgres";
+import { prepareDatabaseConnection } from "../src/lib/database-url";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL es obligatorio para ejecutar migraciones.");
 }
 
-const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
-const sql = postgres(databaseUrl, {
+const connection = prepareDatabaseConnection(databaseUrl);
+if (connection.pooled) {
+  throw new Error(
+    "Las migraciones requieren una conexión directa; use DATABASE_URL_UNPOOLED como DATABASE_URL para este comando.",
+  );
+}
+const sql = postgres(connection.url, {
   max: 1,
   prepare: false,
-  ssl: isLocal ? false : "require",
+  ssl: connection.ssl,
 });
 
 async function main() {

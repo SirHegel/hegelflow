@@ -1,6 +1,6 @@
 # HegelFlow
 
-HegelFlow es una aplicación interna para delegar, priorizar y seguir el trabajo de una empresa con Scrum y Kanban. El repositorio contiene una aplicación web funcional con autenticación propia, tableros, backlog, sprints, calendario, reportes, perfiles de trabajo y trazabilidad sobre PostgreSQL.
+HegelFlow es una aplicación personal para delegar, priorizar y seguir trabajo con Scrum y Kanban. El repositorio contiene una aplicación web funcional con autenticación propia, tableros, backlog, sprints, calendario, reportes, perfiles de trabajo y trazabilidad sobre PostgreSQL.
 
 > Estado revisado el 25 de agosto de 2026. El código demuestra la aplicación y su preparación para Vercel + Neon; no demuestra por sí solo que exista un despliegue de producción activo.
 
@@ -43,7 +43,7 @@ HegelFlow es una aplicación interna para delegar, priorizar y seguir el trabajo
 
 - Node.js 20.9 o posterior, requisito de [Next.js 16](https://nextjs.org/docs/app/getting-started/installation).
 - npm y una base PostgreSQL accesible.
-- Para PostgreSQL remoto, una conexión TLS; el cliente exige SSL fuera de `localhost`.
+- Para PostgreSQL remoto, una conexión TLS; el cliente exige validación completa del certificado fuera de hosts locales exactos.
 
 ### 1. Instalar dependencias
 
@@ -56,7 +56,7 @@ npm ci
 Cree `.env.local`; los archivos `.env*` están excluidos de Git. Los siguientes valores son ficticios y deben reemplazarse:
 
 ```dotenv
-DATABASE_URL='postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require'
+DATABASE_URL='postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=verify-full'
 APP_URL='http://localhost:3000'
 BOOTSTRAP_ADMIN_USERNAME='admin-ejemplo'
 BOOTSTRAP_ADMIN_PASSWORD='change-me-with-a-long-random-value'
@@ -116,7 +116,7 @@ Abra [http://localhost:3000](http://localhost:3000). Inicie sesión con las cred
 
 `audit:secrets` es una defensa preventiva, no sustituye un escáner de secretos con historial Git ni la rotación inmediata de una credencial expuesta.
 
-En la verificación local del 25 de agosto de 2026 pasaron 23 pruebas unitarias y 6 pruebas de integración PostgreSQL. También se validaron una migración limpia en PostgreSQL 18, la repetición de migración/seed, login y páginas autenticadas, mutaciones de tarea, conflicto optimista, comentarios, checklist, búsqueda, archivado y snapshots de transición. `audit:all` terminó con lint/tipos/build en verde y 0 vulnerabilidades de npm. La cobertura unitaria global sigue baja —19,43 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
+En la verificación local del 25 de agosto de 2026 pasaron 26 pruebas unitarias y 6 pruebas de integración PostgreSQL. También se validaron una migración limpia en PostgreSQL 18, la repetición de migración/seed, login y páginas autenticadas, mutaciones de tarea, conflicto optimista, comentarios, checklist, búsqueda, archivado y snapshots de transición. `audit:all` terminó con lint/tipos/build en verde y 0 vulnerabilidades de npm. La cobertura unitaria global sigue baja —20,19 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
 
 ## Despliegue en Vercel + Neon
 
@@ -124,7 +124,7 @@ En la verificación local del 25 de agosto de 2026 pasaron 23 pruebas unitarias 
 2. Conecte el repositorio a un proyecto de Vercel. Next.js no requiere `vercel.json` para el caso actual.
 3. En **Project Settings → Environment Variables**, configure `DATABASE_URL` y `APP_URL` para cada ambiente. Vercel documenta la [separación entre Development, Preview y Production](https://vercel.com/docs/environment-variables).
 4. Use una rama/base Neon separada para Preview; no conecte despliegues no confiables a datos de producción.
-5. Desde una estación o job confiable, inyecte los secretos sin imprimirlos y ejecute `npm run db:migrate` contra la base exacta que recibirá el despliegue.
+5. Desde una estación o job confiable, inyecte los secretos sin imprimirlos y ejecute `DATABASE_URL="$DATABASE_URL_UNPOOLED" npm run db:migrate` contra la base exacta que recibirá el despliegue. Las migraciones usan un bloqueo de sesión y rechazan la URL agrupada de Neon.
 6. Solo en el primer aprovisionamiento, ejecute `npm run db:seed` con variables `BOOTSTRAP_*` temporales. Retírelas inmediatamente después.
 7. Ejecute `npm run audit:all`, despliegue una Preview, haga smoke tests de login, permisos, movimientos y sprints, y después promueva a Production.
 
@@ -136,7 +136,7 @@ Cambiar una variable en Vercel solo afecta despliegues nuevos; vuelva a desplega
 - Los tableros `PRIVATE` se filtran por rol/ACL en las vistas principales, pero todavía no hay interfaz para administrar `board_members` ni pruebas negativas automatizadas de todos los read paths.
 - No existe Row-Level Security en PostgreSQL; el aislamiento de lectura depende de la aplicación, complementado por triggers que rechazan asociaciones cruzadas entre workspaces.
 - Automatizaciones, invitaciones, notificaciones y adjuntos están modelados, pero no tienen ejecución o flujo completo.
-- Hay controles y pruebas unitarias, y una validación manual PostgreSQL/E2E en curso; falta convertirla en pruebas automatizadas de integración y autorización.
+- Hay controles unitarios e integración PostgreSQL automatizada; aún falta automatizar el E2E HTTP/navegador completo y ampliar la matriz negativa de autorización.
 - Los reportes son una primera versión; las fórmulas de compromiso, cambios de alcance y métricas históricas requieren validación con datos reales.
 - No hay recuperación de contraseña, MFA, SSO, política de backups verificada desde el repositorio ni telemetría operativa configurada.
 

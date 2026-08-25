@@ -7,7 +7,7 @@
 HegelFlow debe proteger:
 
 - credenciales, cookies de sesión y cadenas de conexión;
-- datos de personas, capacidad y actividad de la empresa;
+- datos de personas, capacidad y actividad del proyecto;
 - separación entre workspaces y entre niveles de acceso;
 - integridad del flujo, los sprints, límites WIP y reportes;
 - atribución de cambios de negocio y eventos de autenticación;
@@ -205,7 +205,7 @@ Si una credencial se expone, no basta con borrarla del archivo: hay que revocarl
 
 ## Datos y privacidad
 
-- El cliente exige TLS para bases no locales.
+- El cliente exige TLS `verify-full` para bases no locales, valida el hostname del certificado y solo reconoce hosts locales exactos para desarrollo sin TLS.
 - El pool se limita a una conexión por instancia y desactiva prepared statements por compatibilidad serverless.
 - IP de sesión y auditoría se almacena como SHA-256; el user agent de sesión sí se conserva en texto hasta 512 caracteres.
 - Los hashes de IP son deterministas y sin una clave secreta; reducen exposición accidental, pero no equivalen a anonimización fuerte.

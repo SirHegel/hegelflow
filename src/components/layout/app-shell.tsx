@@ -88,7 +88,7 @@ export function AppShell({ context, boards, children }: {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-white">HegelFlow</p>
-          <p className="truncate text-[11px] text-slate-400">Gestión empresarial</p>
+          <p className="truncate text-[11px] text-slate-400">Proyecto personal</p>
         </div>
         <button className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label="Cambiar espacio">
           <ChevronsUpDown className="size-4" />

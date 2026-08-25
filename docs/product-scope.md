@@ -4,7 +4,7 @@
 
 ## Objetivo
 
-HegelFlow es el sistema interno para planificar, delegar, ejecutar y auditar el trabajo de la empresa con Scrum y Kanban en un mismo espacio. Debe responder con datos verificables:
+HegelFlow es un sistema personal para planificar, delegar, ejecutar y auditar trabajo con Scrum y Kanban en un mismo espacio. Debe responder con datos verificables:
 
 - qué trabajo existe, su prioridad y su propósito;
 - quién es responsable y cuál es su capacidad;
@@ -179,7 +179,7 @@ La base actual es una **alpha interna funcional**. Para considerarla MVP operati
 - Roadmaps, objetivos/OKR, portafolios y dashboards programados.
 - Plantillas de proyecto, importación y exportación completa.
 
-### Fase 4 — Gobierno empresarial
+### Fase 4 — Gobierno avanzado
 
 **Resultado:** el sistema puede crecer a múltiples equipos y terceros.
 

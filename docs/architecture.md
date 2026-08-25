@@ -204,9 +204,9 @@ flowchart TB
   O[Operador o CI confiable] -->|migraciones previas| N
 ```
 
-`db()` reutiliza un cliente por instancia mediante `globalThis`, con `max: 1`, timeout de conexión, sentencias preparadas desactivadas y SSL obligatorio para hosts no locales. Esto limita conexiones por función, pero no reemplaza el pooling de Neon ni el monitoreo de conexiones bajo escalado horizontal.
+`db()` reutiliza un cliente por instancia mediante `globalThis`, con `max: 1`, timeout de conexión, sentencias preparadas desactivadas y TLS `verify-full` para hosts no locales. La URL se interpreta antes de conectar, elimina el parámetro `channel_binding` que postgres.js 3.x no soporta y solo desactiva TLS para hosts locales exactos. Esto limita conexiones por función, pero no reemplaza el pooling de Neon ni el monitoreo de conexiones bajo escalado horizontal.
 
-Cada ambiente debe tener su propia `DATABASE_URL` y su `APP_URL`. Preview no debe compartir datos de producción. Las migraciones deben ejecutarse explícitamente antes de promover una versión que dependa del nuevo esquema; el build no las ejecuta.
+Cada ambiente debe tener su propia `DATABASE_URL` y su `APP_URL`. Preview no debe compartir datos de producción. Las migraciones deben ejecutarse explícitamente antes de promover una versión que dependa del nuevo esquema; el build no las ejecuta. Como el migrador toma un advisory lock de sesión, exige la URL directa (`DATABASE_URL_UNPOOLED` en Neon) y rechaza hostnames `-pooler`.
 
 ## Pruebas y auditoría
 
@@ -221,7 +221,7 @@ La suite `test:integration` migra PostgreSQL real y cubre ACL de tableros privad
 
 `npm run audit:all` encadena escaneo de patrones sensibles, lint, generación/comprobación de tipos, cobertura, build y vulnerabilidades de severidad alta. [GitHub Actions](../.github/workflows/quality.yml) ejecuta esas etapas en cada pull request y push a `main`, con permisos de solo lectura y `npm ci`; Dependabot revisa dependencias npm semanalmente.
 
-La ejecución local de corte terminó en verde: 23 pruebas unitarias y 6 de integración aprobadas, migración/seed repetibles en PostgreSQL 18, build de producción correcto y 0 vulnerabilidades de npm. La cobertura unitaria fue 19,43 % de sentencias y 20,59 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
+La ejecución local de corte terminó en verde: 26 pruebas unitarias y 6 de integración aprobadas, migración/seed repetibles en PostgreSQL 18, build de producción correcto y 0 vulnerabilidades de npm. La cobertura unitaria fue 20,19 % de sentencias y 21,41 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
 
 Además pasó un smoke HTTP autenticado de login, todas las páginas principales, creación/movimiento/archivo de tarea, conflicto de versión, comentarios, checklist y búsqueda. Aún no hay automatización E2E de navegador/Route Handlers, pruebas de concurrencia simultánea ni umbrales mínimos de cobertura configurados.
 

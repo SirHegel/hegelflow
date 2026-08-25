@@ -64,7 +64,7 @@ export default async function ActivityPage() {
         </section>
         <aside className="space-y-4">
           <div className="surface p-5"><div className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-600"><ShieldCheck className="size-5" /></div><h2 className="mt-4 text-sm font-bold text-slate-900">Auditoría protegida</h2><p className="mt-2 text-xs leading-5 text-slate-500">La actividad de negocio se presenta aquí. Los eventos de seguridad y acceso permanecen separados y restringidos al propietario.</p></div>
-          <div className="surface p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retención</p><p className="mt-2 text-2xl font-bold text-slate-900">Completa</p><p className="mt-1 text-xs leading-5 text-slate-500">Sin límites comerciales artificiales. La política de retención será configurable por empresa.</p></div>
+          <div className="surface p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Retención</p><p className="mt-2 text-2xl font-bold text-slate-900">Completa</p><p className="mt-1 text-xs leading-5 text-slate-500">Sin límites comerciales artificiales. La política de retención será configurable por espacio.</p></div>
         </aside>
       </div>
     </div>
