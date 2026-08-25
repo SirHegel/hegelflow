@@ -2,7 +2,7 @@
 
 HegelFlow es una aplicación personal para delegar, priorizar y seguir trabajo con Scrum y Kanban. El repositorio contiene una aplicación web funcional con autenticación propia, tableros, backlog, sprints, calendario, reportes, perfiles de trabajo y trazabilidad sobre PostgreSQL.
 
-> Estado revisado el 25 de agosto de 2026. El código demuestra la aplicación y su preparación para Vercel + Neon; no demuestra por sí solo que exista un despliegue de producción activo.
+> Producción personal verificada el 25 de agosto de 2026 en [hegelflow.vercel.app](https://hegelflow.vercel.app), con Vercel Hobby y Neon Free en `iad1`. El smoke autenticado confirmó login, páginas privadas, búsqueda, CSRF, cookie segura, logout y revocación de sesión.
 
 ## Qué funciona hoy
 
@@ -130,7 +130,7 @@ En la verificación local del 25 de agosto de 2026 pasaron 26 pruebas unitarias 
 
 Cambiar una variable en Vercel solo afecta despliegues nuevos; vuelva a desplegar para aplicarla. El runtime usa Node.js y una conexión por instancia (`max: 1`); para carga serverless prefiera el hostname *pooled* que Neon ofrece y supervise el número de conexiones.
 
-## Límites conocidos antes de producción
+## Límites conocidos
 
 - No hay aprovisionamiento completo de cuentas: crear un perfil operativo no crea automáticamente un usuario con login.
 - Los tableros `PRIVATE` se filtran por rol/ACL en las vistas principales, pero todavía no hay interfaz para administrar `board_members` ni pruebas negativas automatizadas de todos los read paths.
