@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 import { getCurrentSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Iniciar sesión | HegelFlow",
+  title: "Iniciar sesión",
   description: "Acceso seguro al espacio de trabajo de HegelFlow.",
 };
 
