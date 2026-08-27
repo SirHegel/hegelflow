@@ -9,6 +9,7 @@ HegelFlow es una aplicación personal para delegar, priorizar y seguir trabajo c
 - Inicio y cierre de sesión, sesiones revocables y cambio de contraseña.
 - Resumen ejecutivo de trabajo abierto, vencimientos, sprint y carga por persona.
 - Tablero Kanban con drag-and-drop, vista de lista, filtros y límites WIP.
+- Sincronización automática de cambios visibles entre navegadores, con actualización al recuperar el foco y revisión ligera cada cinco segundos.
 - Creación, edición y archivo de tareas con tipo, prioridad, fechas, story points, responsables, etiquetas y sprint.
 - Backlog y gestión de sprints: crear, iniciar, completar y devolver pendientes al backlog.
 - Calendario mensual de fechas de tareas y sprints.

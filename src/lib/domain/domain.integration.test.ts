@@ -2,7 +2,13 @@ import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { getActivity, getReportData, getSettingsData, getWorkspaceBoards } from "@/lib/data";
+import {
+  getActivity,
+  getReportData,
+  getSettingsData,
+  getWorkspaceBoards,
+  getWorkspaceRevision,
+} from "@/lib/data";
 import { prepareDatabaseConnection } from "@/lib/database-url";
 import { db } from "@/lib/db";
 import { createTask, moveTask, updateTask } from "@/lib/domain/tasks";
@@ -130,12 +136,14 @@ beforeAll(async () => {
     VALUES
       (${ids.publicBoard}, 'Backlog', 'BACKLOG', 1000, NULL, '#64748b'),
       (${ids.publicBoard}, 'En curso', 'IN_PROGRESS', 2000, 1, '#f59e0b'),
+      (${ids.publicBoard}, 'En revisión', 'REVIEW', 3000, NULL, '#a855f7'),
       (${ids.privateBoard}, 'Backlog', 'BACKLOG', 1000, NULL, '#64748b'),
       (${ids.otherBoard}, 'Backlog', 'BACKLOG', 1000, NULL, '#64748b')
     RETURNING id, board_id AS "boardId", category
   `;
   ids.publicBacklog = columns.find((row) => row.boardId === ids.publicBoard && row.category === "BACKLOG")!.id;
   ids.publicProgress = columns.find((row) => row.boardId === ids.publicBoard && row.category === "IN_PROGRESS")!.id;
+  ids.publicReview = columns.find((row) => row.boardId === ids.publicBoard && row.category === "REVIEW")!.id;
   ids.privateBacklog = columns.find((row) => row.boardId === ids.privateBoard)!.id;
   ids.otherBacklog = columns.find((row) => row.boardId === ids.otherBoard)!.id;
 
@@ -186,10 +194,19 @@ beforeAll(async () => {
   await fixtureSql`
     INSERT INTO activity_log (
       workspace_id, board_id, actor_id, entity_type, entity_id, action, summary
-    ) VALUES (
-      ${ids.workspace}, ${ids.publicBoard}, ${ids.owner}, 'automation_rule', ${ids.rule},
-      'automation.enabled', 'Sensitive automation name'
-    )
+    ) VALUES
+      (
+        ${ids.workspace}, ${ids.publicBoard}, ${ids.owner}, 'automation_rule', ${ids.rule},
+        'automation.enabled', 'Sensitive automation name'
+      ),
+      (
+        ${ids.workspace}, ${ids.publicBoard}, ${ids.owner}, 'board', ${ids.publicBoard},
+        'board.visible_event', 'Visible board activity'
+      ),
+      (
+        ${ids.workspace}, ${ids.privateBoard}, ${ids.owner}, 'board', ${ids.privateBoard},
+        'board.private_event', 'Private board activity'
+      )
   `;
 
   await fixtureSql`
@@ -230,6 +247,29 @@ afterAll(async () => {
 });
 
 describe("PostgreSQL domain integration", () => {
+  it("builds workspace revisions only from activity visible to the member", async () => {
+    const memberRevision = await getWorkspaceRevision(ids.workspace, ids.member, "MEMBER");
+    const ownerRevision = await getWorkspaceRevision(ids.workspace, ids.owner, "OWNER");
+
+    expect(memberRevision).toMatch(/^1:.+/);
+    expect(ownerRevision).toMatch(/^3:.+/);
+
+    await fixtureSql`
+      INSERT INTO activity_log (
+        workspace_id, board_id, actor_id, entity_type, entity_id, action, summary
+      ) VALUES (
+        ${ids.workspace}, ${ids.publicBoard}, ${ids.owner}, 'board', ${ids.publicBoard},
+        'board.revision_event', 'Revision activity'
+      )
+    `;
+
+    const changedRevision = await getWorkspaceRevision(ids.workspace, ids.member, "MEMBER");
+    const beforeCount = Number(memberRevision.slice(0, memberRevision.indexOf(":")));
+    const afterCount = Number(changedRevision.slice(0, changedRevision.indexOf(":")));
+    expect(afterCount).toBe(beforeCount + 1);
+    expect(changedRevision).not.toBe(memberRevision);
+  });
+
   it("applies PRIVATE board ACLs to reads and writes", async () => {
     const memberBoards = await getWorkspaceBoards(ids.workspace, ids.member, "MEMBER");
     const ownerBoards = await getWorkspaceBoards(ids.workspace, ids.owner, "OWNER");
@@ -296,6 +336,26 @@ describe("PostgreSQL domain integration", () => {
       }),
     ).rejects.toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
     expect(updated.version).toBe(candidate.version + 1);
+  });
+
+  it("moves a task into a completely empty column", async () => {
+    const candidate = await createTask(
+      ownerContext,
+      taskInput(ids.publicBoard, ids.publicBacklog, "Empty column candidate"),
+    );
+
+    const moved = await moveTask(ownerContext, {
+      taskId: candidate.id,
+      toColumnId: ids.publicReview,
+      expectedVersion: candidate.version,
+      beforeTaskId: null,
+    });
+
+    expect(moved).toMatchObject({
+      columnId: ids.publicReview,
+      position: 1_000,
+      version: candidate.version + 1,
+    });
   });
 
   it("does not leak private sprint scope or automation metadata", async () => {

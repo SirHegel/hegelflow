@@ -17,7 +17,6 @@ export default async function BoardPage({ params }: PageProps<"/boards/[boardId]
   return (
     <Suspense fallback={<div className="p-8 text-sm text-slate-500">Cargando tablero…</div>}>
       <KanbanBoard
-        key={data.tasks.map((task) => `${task.id}:${task.version}`).join("|")}
         initialData={data}
         context={context}
         initialTodayKey={dateKeyInTimeZone(new Date(), session.user.timezone)}

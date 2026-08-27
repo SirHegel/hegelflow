@@ -457,6 +457,47 @@ export async function getActivity(
   `;
 }
 
+export async function getWorkspaceRevision(
+  workspaceId: string,
+  membershipId: string,
+  accessLevel: AccessLevel,
+): Promise<string> {
+  const sql = db();
+  const canSeeAllBoards = accessLevel === "OWNER" || accessLevel === "ADMIN";
+  const canReadAutomations = hasPermission(accessLevel, "automation.read");
+  const [row] = await sql<{ revision: string }[]>`
+    SELECT CONCAT(
+      COUNT(*)::text,
+      ':',
+      COALESCE(MAX(a.created_at)::text, '')
+    ) AS revision
+    FROM activity_log a
+    WHERE a.workspace_id = ${workspaceId}
+      AND (a.entity_type <> 'automation_rule' OR ${canReadAutomations})
+      AND (
+        a.board_id IS NULL
+        OR ${canSeeAllBoards}
+        OR EXISTS (
+          SELECT 1
+          FROM boards b
+          WHERE b.id = a.board_id
+            AND b.workspace_id = ${workspaceId}
+            AND (
+              b.visibility = 'WORKSPACE'
+              OR b.created_by = ${membershipId}
+              OR EXISTS (
+                SELECT 1
+                FROM board_members bm
+                WHERE bm.board_id = b.id
+                  AND bm.membership_id = ${membershipId}
+              )
+            )
+        )
+      )
+  `;
+  return row?.revision ?? "0:";
+}
+
 export async function getTeamData(workspaceId: string, membershipId: string, accessLevel: AccessLevel) {
   const sql = db();
   const canSeeAllBoards = accessLevel === "OWNER" || accessLevel === "ADMIN";

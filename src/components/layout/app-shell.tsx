@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   Bell,
@@ -29,6 +29,8 @@ import type { WorkspaceContext } from "@/lib/types";
 
 type BoardLink = { id: string; name: string; color: string };
 
+const SYNC_INTERVAL_MS = 5_000;
+
 const nav = [
   { href: "/", label: "Resumen", icon: Gauge, exact: true },
   { href: "/backlog", label: "Backlog", icon: FolderKanban },
@@ -39,9 +41,10 @@ const nav = [
   { href: "/activity", label: "Actividad", icon: Activity },
 ];
 
-export function AppShell({ context, boards, children }: {
+export function AppShell({ context, boards, syncRevision, children }: {
   context: WorkspaceContext;
   boards: BoardLink[];
+  syncRevision: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -49,6 +52,83 @@ export function AppShell({ context, boards, children }: {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const syncRevisionRef = useRef(syncRevision);
+
+  useEffect(() => {
+    syncRevisionRef.current = syncRevision;
+  }, [syncRevision]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let checking = false;
+    let timeout: number | undefined;
+    let controller: AbortController | null = null;
+
+    const schedule = () => {
+      if (cancelled || document.hidden) return;
+      timeout = window.setTimeout(checkForChanges, SYNC_INTERVAL_MS);
+    };
+
+    const checkForChanges = async () => {
+      if (cancelled || checking || document.hidden) return;
+      checking = true;
+      controller = new AbortController();
+
+      try {
+        const response = await fetch("/api/sync", {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        if (response.status === 401) {
+          router.refresh();
+          return;
+        }
+        if (!response.ok) return;
+
+        const payload: unknown = await response.json();
+        const revision = typeof payload === "object"
+          && payload !== null
+          && "revision" in payload
+          && typeof payload.revision === "string"
+          ? payload.revision
+          : null;
+        if (revision !== null && revision !== syncRevisionRef.current) {
+          syncRevisionRef.current = revision;
+          router.refresh();
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          // A transient polling failure must not interrupt the workspace.
+        }
+      } finally {
+        checking = false;
+        controller = null;
+        schedule();
+      }
+    };
+
+    const wake = () => {
+      if (document.hidden) {
+        if (timeout !== undefined) window.clearTimeout(timeout);
+        return;
+      }
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      void checkForChanges();
+    };
+
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("focus", wake);
+    schedule();
+
+    return () => {
+      cancelled = true;
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      controller?.abort();
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("focus", wake);
+    };
+  }, [router]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

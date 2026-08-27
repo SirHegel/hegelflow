@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  closestCorners,
   DndContext,
   DragOverlay,
   KeyboardSensor,
@@ -15,6 +14,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { kanbanCollisionDetection } from "@/components/board/kanban-collision";
 import {
   CheckCircle2,
   ChevronDown,
@@ -44,17 +44,19 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tasks, setTasks] = useState(initialData.tasks);
+  const [taskOverride, setTaskOverride] = useState<{ base: TaskCard[]; tasks: TaskCard[] } | null>(null);
+  const tasks = taskOverride?.base === initialData.tasks ? taskOverride.tasks : initialData.tasks;
   const [query, setQuery] = useState("");
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
   const [assignee, setAssignee] = useState("ALL");
   const [view, setView] = useState<ViewMode>("board");
   const [activeTask, setActiveTask] = useState<TaskCard | null>(null);
-  const [editorTask, setEditorTask] = useState<TaskCard | null | undefined>(() => {
-    if (searchParams.get("new") === "task") return null;
-    const taskId = searchParams.get("task");
-    return taskId ? initialData.tasks.find((item) => item.id === taskId) : undefined;
-  });
+  const requestedTaskId = searchParams.get("task");
+  const editorTask = searchParams.get("new") === "task"
+    ? null
+    : requestedTaskId
+      ? tasks.find((task) => task.id === requestedTaskId)
+      : undefined;
   const [editorColumn, setEditorColumn] = useState<BoardColumn>(
     initialData.columns.find((column) => column.category === "TODO") ?? initialData.columns[0],
   );
@@ -86,7 +88,6 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
   }, [assignee, priority, query, tasks]);
 
   function openTask(task: TaskCard) {
-    setEditorTask(task);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("new");
     params.set("task", task.id);
@@ -95,8 +96,11 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
 
   function createTask(column?: BoardColumn) {
     if (!canEdit) return;
-    if (column) setEditorColumn(column);
-    setEditorTask(null);
+    setEditorColumn(
+      column
+      ?? initialData.columns.find((candidate) => candidate.category === "TODO")
+      ?? initialData.columns[0],
+    );
     const params = new URLSearchParams(searchParams.toString());
     params.delete("task");
     params.set("new", "task");
@@ -104,7 +108,6 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
   }
 
   function closeEditor() {
-    setEditorTask(undefined);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("new");
     params.delete("task");
@@ -121,9 +124,14 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
     if (!canEdit || !event.over) return;
     const moving = tasks.find((task) => task.id === event.active.id);
     if (!moving) return;
+    if (event.over.id === moving.id) return;
 
     const overTask = tasks.find((task) => task.id === event.over?.id);
-    const targetColumnId = overTask?.columnId ?? event.over.data.current?.columnId as string | undefined;
+    const overId = String(event.over.id);
+    const dataColumnId = event.over.data.current?.columnId;
+    const targetColumnId = overTask?.columnId
+      ?? (typeof dataColumnId === "string" ? dataColumnId : undefined)
+      ?? (overId.startsWith("column:") ? overId.slice("column:".length) : undefined);
     if (!targetColumnId) return;
     const targetColumn = initialData.columns.find((column) => column.id === targetColumnId);
     if (!targetColumn) return;
@@ -137,7 +145,6 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
       }
     }
 
-    const snapshot = tasks;
     const remaining = tasks.filter((task) => task.id !== moving.id);
     const inTarget = remaining.filter((task) => task.columnId === targetColumnId).sort((a, b) => a.position - b.position);
     const insertAt = beforeTaskId ? Math.max(0, inTarget.findIndex((task) => task.id === beforeTaskId)) : inTarget.length;
@@ -145,7 +152,7 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
     const next = inTarget[insertAt]?.position ?? previous + 2000;
     const position = previous + (next - previous) / 2;
     const optimistic = { ...moving, columnId: targetColumnId, position };
-    setTasks([...remaining, optimistic]);
+    setTaskOverride({ base: initialData.tasks, tasks: [...remaining, optimistic] });
 
     try {
       const response = await fetch(`/api/tasks/${moving.id}/move`, {
@@ -156,12 +163,15 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error ?? "No fue posible mover la tarea.");
       if (typeof result.version === "number") {
-        setTasks((current) => current.map((task) => task.id === moving.id ? { ...task, version: result.version } : task));
+        setTaskOverride((current) => current ? {
+          ...current,
+          tasks: current.tasks.map((task) => task.id === moving.id ? { ...task, version: result.version } : task),
+        } : current);
       }
       setToast({ type: "success", message: `Tarea movida a “${targetColumn.name}”.` });
       router.refresh();
     } catch (caught) {
-      setTasks(snapshot);
+      setTaskOverride(null);
       setToast({ type: "error", message: caught instanceof Error ? caught.message : "No fue posible mover la tarea." });
     }
   }
@@ -235,7 +245,14 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
       </div>
 
       {view === "board" ? (
-        <DndContext id={`kanban-${initialData.board.id}`} sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext
+          id={`kanban-${initialData.board.id}`}
+          sensors={sensors}
+          collisionDetection={kanbanCollisionDetection}
+          onDragStart={handleDragStart}
+          onDragCancel={() => setActiveTask(null)}
+          onDragEnd={handleDragEnd}
+        >
           <div className="app-scrollbar flex flex-1 gap-4 overflow-x-auto p-4 sm:p-6 lg:p-7">
             {initialData.columns.map((column) => (
               <KanbanColumn
@@ -257,6 +274,7 @@ export function KanbanBoard({ initialData, context, initialTodayKey, timeZone }:
 
       {editorTask !== undefined ? (
         <TaskEditor
+          key={editorTask ? `${editorTask.id}:${editorTask.version}` : "new"}
           boardId={initialData.board.id}
           task={editorTask}
           defaultColumn={editorColumn}

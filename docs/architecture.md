@@ -1,6 +1,6 @@
 # Arquitectura de HegelFlow
 
-> Fecha de corte: 25 de agosto de 2026. Este documento describe el código que existe en el repositorio, no una arquitectura futura ni la confirmación de un despliegue activo.
+> Fecha de corte: 27 de agosto de 2026. Este documento describe el código que existe en el repositorio, no una arquitectura futura ni la confirmación de un despliegue activo.
 
 ## Resumen
 
@@ -43,7 +43,7 @@ flowchart LR
 
 Las rutas de `src/app/(workspace)` son Server Components dinámicos. [`requirePageContext`](../src/lib/page-context.ts) obtiene la sesión y el primer workspace activo; si falta cualquiera, redirige a `/login`. El layout consulta los tableros y monta el `AppShell`.
 
-Los componentes cliente controlan formularios, filtros, modales, drag-and-drop y actualizaciones optimistas. Envían JSON a `/api` con `Content-Type: application/json` y `X-CSRF-Protection: 1`; después usan `router.refresh()` para reconciliarse con PostgreSQL.
+Los componentes cliente controlan formularios, filtros, modales, drag-and-drop y actualizaciones optimistas. Envían JSON a `/api` con `Content-Type: application/json` y `X-CSRF-Protection: 1`; después usan `router.refresh()` para reconciliarse con PostgreSQL. El `AppShell` consulta una revisión con las mismas ACL de la actividad en `/api/sync` cada cinco segundos mientras la pestaña está visible y al recuperar el foco; si cambia, refresca los Server Components sin desmontar el estado no afectado del tablero.
 
 No hay `middleware.ts` o `proxy.ts` global. La protección depende de la guarda del layout para páginas y de la autenticación explícita en cada handler API.
 
@@ -63,7 +63,7 @@ Las páginas del workspace declaran `dynamic = "force-dynamic"`; no se usa cach�
 4. resuelve el workspace activo;
 5. traduce errores de seguridad y dominio a respuestas JSON sin exponer excepciones internas.
 
-Los endpoints de login y logout aplican las mismas comprobaciones con un límite de cuerpo menor. Los GET de sesión y búsqueda autentican de forma independiente y responden con `no-store`.
+Los endpoints de login y logout aplican las mismas comprobaciones con un límite de cuerpo menor. Los GET de sesión, búsqueda y sincronización autentican de forma independiente y responden con `no-store`.
 
 ### Dominio
 
