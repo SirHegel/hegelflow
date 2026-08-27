@@ -4,6 +4,18 @@ HegelFlow es una aplicación multiusuario para delegar, priorizar y seguir traba
 
 > Producción disponible en [hegelflow.vercel.app](https://hegelflow.vercel.app), con Vercel Hobby y Neon Free. El despliegue conserva secretos únicamente en el entorno administrado, fuera del repositorio.
 
+## Vista del producto
+
+Estas capturas se renderizaron con los componentes reales de HegelFlow sobre un escenario local, aislado y marcado como demostración. Todos los nombres, tareas y valores visibles son ficticios; ninguna imagen contiene credenciales ni datos de producción.
+
+### Resumen ejecutivo
+
+![Resumen de HegelFlow con indicadores, tableros, sprint, carga y vencimientos sobre datos ficticios](public/screenshots/dashboard-demo.png)
+
+### Reportes ágiles
+
+![Reportes de HegelFlow con burndown, velocidad y tiempo de ciclo sobre datos ficticios](public/screenshots/reports-demo.png)
+
 ## Qué funciona hoy
 
 - Inicio y cierre de sesión, sesiones revocables y cambio de contraseña.
@@ -119,7 +131,17 @@ Abra [http://localhost:3000](http://localhost:3000). Inicie sesión con las cred
 
 `audit:secrets` es una defensa preventiva, no sustituye un escáner de secretos con historial Git ni la rotación inmediata de una credencial expuesta.
 
-En la verificación local del 27 de agosto de 2026 pasaron 40 pruebas unitarias; `audit:all` terminó con secretos, lint, tipos, cobertura, build y dependencias en verde, con 0 vulnerabilidades de npm. La suite PostgreSQL contiene 11 casos aprobados en GitHub Actions sobre PostgreSQL 18. La cobertura unitaria global sigue baja —22,86 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
+Estado comprobado el 27 de agosto de 2026:
+
+| Control | Resultado |
+| --- | --- |
+| Pruebas unitarias | 44 de 44 aprobadas en 9 archivos |
+| Cobertura unitaria | 24,14 % de sentencias (226 de 936) |
+| Integración PostgreSQL | 11 casos aprobados en GitHub Actions sobre PostgreSQL 18 |
+| Calidad y build | Secretos, ESLint, tipos y build de producción en verde |
+| Dependencias | 0 vulnerabilidades reportadas por `npm audit` |
+
+La cobertura unitaria global sigue baja, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
 
 ## Despliegue en Vercel + Neon
 
