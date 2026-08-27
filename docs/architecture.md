@@ -224,7 +224,7 @@ La suite `test:integration` migra PostgreSQL real y cubre ACL de tableros privad
 
 `npm run audit:all` encadena escaneo de patrones sensibles, lint, generación/comprobación de tipos, cobertura, build y vulnerabilidades de severidad alta. [GitHub Actions](../.github/workflows/quality.yml) ejecuta esas etapas en cada pull request y push a `main`, con permisos de solo lectura y `npm ci`; Dependabot revisa dependencias npm semanalmente.
 
-La ejecución local de corte terminó en verde: 40 pruebas unitarias, build de producción correcto y 0 vulnerabilidades de npm. La suite de 9 pruebas de integración se ejecuta en GitHub Actions con PostgreSQL 18, incluida la migración. La cobertura unitaria fue 22,86 % de sentencias y 23,34 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
+La ejecución local de corte terminó en verde: 40 pruebas unitarias, build de producción correcto y 0 vulnerabilidades de npm. Las 11 pruebas de integración pasaron en GitHub Actions con PostgreSQL 18, incluida la migración. La cobertura unitaria fue 22,86 % de sentencias y 23,34 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
 
 Además pasó un smoke HTTP autenticado de login, todas las páginas principales, creación/movimiento/archivo de tarea, conflicto de versión, comentarios, checklist y búsqueda. Aún no hay automatización E2E de navegador/Route Handlers, pruebas de concurrencia simultánea ni umbrales mínimos de cobertura configurados.
 

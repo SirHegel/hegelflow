@@ -229,7 +229,7 @@ Pruebas actuales:
 
 El gate `npm run audit:all` ejecuta auditoría de secretos, ESLint, generación/comprobación de tipos, Vitest con cobertura, build y `npm audit --audit-level=high`. GitHub Actions repite las etapas en pull requests y pushes a `main`, con permisos `contents: read`, instalación reproducible y timeout. Dependabot está configurado semanalmente para npm. `package.json` fija Node.js `>=20.9.0` y autoriza scripts de instalación únicamente para `esbuild@0.28.2` y `unrs-resolver@1.12.2`; cualquier cambio de esas versiones debe volver a revisarse.
 
-La suite PostgreSQL contiene 9 pruebas de integración y se ejecuta en CI sobre una base aislada. Todavía debe ampliar de forma repetible:
+La suite PostgreSQL contiene 11 pruebas de integración aprobadas en CI sobre una base aislada. Todavía debe ampliar de forma repetible:
 
 - denegación de cada mutación por rol;
 - carreras simultáneas de WIP y sprint activo;

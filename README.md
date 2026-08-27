@@ -119,7 +119,7 @@ Abra [http://localhost:3000](http://localhost:3000). Inicie sesión con las cred
 
 `audit:secrets` es una defensa preventiva, no sustituye un escáner de secretos con historial Git ni la rotación inmediata de una credencial expuesta.
 
-En la verificación local del 27 de agosto de 2026 pasaron 40 pruebas unitarias; `audit:all` terminó con secretos, lint, tipos, cobertura, build y dependencias en verde, con 0 vulnerabilidades de npm. La suite PostgreSQL contiene 9 casos y se ejecuta en GitHub Actions sobre PostgreSQL 18. La cobertura unitaria global sigue baja —22,86 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
+En la verificación local del 27 de agosto de 2026 pasaron 40 pruebas unitarias; `audit:all` terminó con secretos, lint, tipos, cobertura, build y dependencias en verde, con 0 vulnerabilidades de npm. La suite PostgreSQL contiene 11 casos aprobados en GitHub Actions sobre PostgreSQL 18. La cobertura unitaria global sigue baja —22,86 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
 
 ## Despliegue en Vercel + Neon
 
