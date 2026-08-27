@@ -253,6 +253,13 @@ export async function createProfile(
       if (!workspace) throw new DomainError(404, "WORKSPACE_NOT_FOUND", "El espacio de trabajo no existe.");
       const actor = await requireWorkspaceAccess(transaction, context, MANAGE_ACCESS);
 
+      if (input.accessLevel === "OWNER") {
+        throw new DomainError(
+          403,
+          "ROLE_ESCALATION_DENIED",
+          "No se puede crear otro propietario desde este flujo.",
+        );
+      }
       if (actor.accessLevel === "ADMIN" && ["OWNER", "ADMIN"].includes(input.accessLevel)) {
         throw new DomainError(403, "ROLE_ESCALATION_DENIED", "Solo un propietario puede conceder acceso administrativo.");
       }

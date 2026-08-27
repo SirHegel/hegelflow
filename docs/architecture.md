@@ -70,6 +70,7 @@ Los endpoints de login y logout aplican las mismas comprobaciones con un límite
 | Módulo | Responsabilidad |
 | --- | --- |
 | [`domain/activity.ts`](../src/lib/domain/activity.ts) | Revalidar membresía, allowlists por rol, concurrencia optimista y activity log |
+| [`domain/accounts.ts`](../src/lib/domain/accounts.ts) | Crear cuentas y perfiles atómicamente y vincular credenciales a perfiles existentes |
 | [`domain/boards.ts`](../src/lib/domain/boards.ts) | Crear tableros/columnas y crear/actualizar perfiles |
 | [`domain/tasks.ts`](../src/lib/domain/tasks.ts) | Crear, editar, mover y archivar tareas; comentarios y checklists |
 | [`domain/sprints.ts`](../src/lib/domain/sprints.ts) | Crear, iniciar y cerrar sprints; asignar tareas |
@@ -90,8 +91,9 @@ Las mutaciones relevantes se ejecutan dentro de transacciones. Bloquean filas de
 | `/calendar` | Vista mensual de inicios, vencimientos y límites de sprint |
 | `/reports` | Burndown, velocidad, estados, prioridades y tiempo de ciclo |
 | `/activity` | Cronología de actividad de negocio |
-| `/team` | Perfiles, capacidad y creación de perfil operativo |
+| `/team` | Perfiles, capacidad, alta de usuarios y habilitación de cuentas por `OWNER` |
 | `/settings` | Lectura de configuración, toggle de reglas y cambio de contraseña |
+| `/settings/audit` | Métricas, políticas y eventos de seguridad, con guarda exclusiva `OWNER` |
 
 La búsqueda global consulta título, descripción o clave de tarea y limita el resultado a 12 elementos.
 
@@ -101,7 +103,7 @@ La búsqueda global consulta título, descripción o clave de tarea y limita el 
 - Trabajo: crear/editar/archivar/mover tarea y asignarla a sprint.
 - Colaboración de dominio: crear comentarios y checklists; crear/actualizar elementos de checklist.
 - Scrum: crear, iniciar y completar sprint.
-- Organización: crear tablero, crear/actualizar perfil.
+- Organización: crear tablero, crear/actualizar perfil, crear cuenta+perfil y vincular una cuenta nueva a un perfil.
 - Configuración: activar o pausar una regla de automatización.
 
 No todas estas operaciones tienen hoy un control de interfaz. Por ejemplo, hay backend para comentarios y checklists, pero el editor de tarea solo muestra sus contadores; existe actualización de perfiles, pero el botón de edición aún no abre un flujo funcional.
@@ -160,7 +162,8 @@ Triggers de alcance rechazan asociaciones cruzadas entre workspaces para tareas/
 - Toda mutación vuelve a comprobar que usuario, membresía y workspace sigan activos.
 - `VIEWER` no escribe; `MEMBER` trabaja sobre tareas; `ADMIN` y `OWNER` gestionan tableros, sprints y perfiles.
 - En un tablero `PRIVATE`, `OWNER`/`ADMIN` del workspace conservan acceso global; los demás necesitan ser creador o miembro explícito para leer, y acceso `ADMIN`/`MEMBER` de tablero para escribir. `OBSERVER` solo lee.
-- Un administrador no puede crear o elevar otro `ADMIN`/`OWNER`; solo un propietario puede hacerlo.
+- Un administrador no puede crear ni elevar perfiles `ADMIN`/`OWNER`; solo un propietario puede conceder `ADMIN` y este flujo no crea otros propietarios.
+- Solo `OWNER` puede establecer credenciales; el flujo administrativo no permite crear otro `OWNER` ni enlazar un `userId` elegido por el navegador.
 - No se puede desactivar o degradar al último propietario activo.
 - Las tareas usan un entero `version`; una edición sobre una versión antigua responde `409 VERSION_CONFLICT`.
 - El límite WIP se valida tanto en el cliente como en el servidor, con bloqueo de columnas durante el movimiento.
@@ -217,11 +220,11 @@ El repositorio contiene pruebas unitarias para:
 - contratos del dominio y errores estables;
 - utilidades de presentación.
 
-La suite `test:integration` migra PostgreSQL real y cubre ACL de tableros privados, edición+sprint atómica, WIP y versiones optimistas, agregados de sprint sin fuga privada, visibilidad de automatizaciones/vistas, rechazo de relaciones entre workspaces e inmutabilidad de transiciones. GitHub Actions levanta PostgreSQL 18 y ejecuta esa suite en cada cambio.
+La suite `test:integration` migra PostgreSQL real y cubre ACL de tableros privados, edición+sprint atómica, WIP y versiones optimistas, agregados de sprint sin fuga privada, visibilidad de automatizaciones/vistas, rechazo de relaciones entre workspaces, inmutabilidad de transiciones, alta atómica de cuentas y revalidación de `OWNER` al leer auditoría. GitHub Actions levanta PostgreSQL 18 y ejecuta esa suite en cada cambio.
 
 `npm run audit:all` encadena escaneo de patrones sensibles, lint, generación/comprobación de tipos, cobertura, build y vulnerabilidades de severidad alta. [GitHub Actions](../.github/workflows/quality.yml) ejecuta esas etapas en cada pull request y push a `main`, con permisos de solo lectura y `npm ci`; Dependabot revisa dependencias npm semanalmente.
 
-La ejecución local de corte terminó en verde: 26 pruebas unitarias y 6 de integración aprobadas, migración/seed repetibles en PostgreSQL 18, build de producción correcto y 0 vulnerabilidades de npm. La cobertura unitaria fue 20,19 % de sentencias y 21,41 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
+La ejecución local de corte terminó en verde: 40 pruebas unitarias, build de producción correcto y 0 vulnerabilidades de npm. La suite de 9 pruebas de integración se ejecuta en GitHub Actions con PostgreSQL 18, incluida la migración. La cobertura unitaria fue 22,86 % de sentencias y 23,34 % de líneas; sigue siendo insuficiente para considerar exhaustivamente probado el dominio transaccional.
 
 Además pasó un smoke HTTP autenticado de login, todas las páginas principales, creación/movimiento/archivo de tarea, conflicto de versión, comentarios, checklist y búsqueda. Aún no hay automatización E2E de navegador/Route Handlers, pruebas de concurrencia simultánea ni umbrales mínimos de cobertura configurados.
 

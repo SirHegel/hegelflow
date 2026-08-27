@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   closeSprintSchema,
   createBoardSchema,
+  createTeamMemberSchema,
   createTaskSchema,
   DomainError,
   moveTaskSchema,
@@ -122,6 +123,51 @@ describe("validadores de dominio", () => {
 
     expect(missing.success).toBe(false);
     expect(valid.success).toBe(true);
+  });
+
+  it("normaliza el usuario y valida credenciales sin truncamiento de bcrypt", () => {
+    const valid = createTeamMemberSchema.safeParse({
+      fullName: "Ada Lovelace",
+      workRole: "Desarrolladora",
+      account: {
+        username: "  ADA.Lovelace  ",
+        password: "frase-inicial-segura-2026",
+      },
+    });
+    const truncated = createTeamMemberSchema.safeParse({
+      fullName: "Grace Hopper",
+      workRole: "Desarrolladora",
+      account: {
+        username: "grace.hopper",
+        password: "á".repeat(40),
+      },
+    });
+
+    expect(valid.success).toBe(true);
+    if (valid.success) expect(valid.data.account?.username).toBe("ada.lovelace");
+    expect(truncated.success).toBe(false);
+  });
+
+  it("mantiene cerrado el contrato público de alta de equipo", () => {
+    const profileOnly = createTeamMemberSchema.safeParse({
+      fullName: "Linus Torvalds",
+      workRole: "Desarrollador",
+      account: null,
+    });
+    const arbitraryLink = createTeamMemberSchema.safeParse({
+      fullName: "Perfil inseguro",
+      workRole: "Desarrollador",
+      userId: ids.task,
+    });
+    const additionalOwner = createTeamMemberSchema.safeParse({
+      fullName: "Otro propietario",
+      workRole: "CEO",
+      accessLevel: "OWNER",
+    });
+
+    expect(profileOnly.success).toBe(true);
+    expect(arbitraryLink.success).toBe(false);
+    expect(additionalOwner.success).toBe(false);
   });
 });
 

@@ -1,5 +1,7 @@
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 
+import { normalizeUsername } from "@/lib/security";
 import type {
   AccessLevel,
   ColumnCategory,
@@ -302,6 +304,48 @@ export const assignTaskToSprintSchema = z.strictObject({
   expectedVersion: z.number().int().positive(),
 });
 
+export const accountUsernameSchema = z
+  .string()
+  .max(256)
+  .transform(normalizeUsername)
+  .pipe(
+    z
+      .string()
+      .min(3)
+      .max(64)
+      .regex(
+        /^[a-z0-9._-]+$/,
+        "El usuario solo puede contener letras minúsculas, números, punto, guion y guion bajo.",
+      ),
+  );
+
+export const accountPasswordSchema = z
+  .string()
+  .min(14)
+  .max(256)
+  .refine(
+    (password) => !bcrypt.truncates(password),
+    "La contraseña no puede superar los 72 bytes en UTF-8.",
+  );
+
+export const accountCredentialsSchema = z.strictObject({
+  username: accountUsernameSchema,
+  password: accountPasswordSchema,
+});
+
+const accountTargetAccessLevelSchema = z.enum(["ADMIN", "MEMBER", "VIEWER"] as const);
+
+const creatableTeamProfileFields = {
+  profileSlug: slugSchema.optional(),
+  fullName: z.string().trim().min(1).max(120),
+  email: z.string().trim().toLowerCase().email().max(255).nullable().default(null),
+  workRole: z.string().trim().min(1).max(120),
+  accessLevel: accountTargetAccessLevelSchema.default("MEMBER"),
+  status: z.literal("ACTIVE").default("ACTIVE"),
+  avatarColor: colorSchema.default("#6d5dfc"),
+  capacityPoints: z.number().int().min(0).max(100_000).default(20),
+};
+
 export const createProfileSchema = z.strictObject({
   userId: uuidSchema.nullable().default(null),
   profileSlug: slugSchema.optional(),
@@ -312,6 +356,20 @@ export const createProfileSchema = z.strictObject({
   status: z.enum(["ACTIVE", "INVITED", "DISABLED"] as const).default("ACTIVE"),
   avatarColor: colorSchema.default("#6d5dfc"),
   capacityPoints: z.number().int().min(0).max(100_000).default(20),
+});
+
+export const createProfileWithAccountSchema = z.strictObject({
+  ...creatableTeamProfileFields,
+  account: accountCredentialsSchema,
+});
+
+export const createTeamMemberSchema = z.strictObject({
+  ...creatableTeamProfileFields,
+  account: accountCredentialsSchema.nullable().default(null),
+});
+
+export const createAccountForProfileSchema = accountCredentialsSchema.extend({
+  membershipId: uuidSchema,
 });
 
 export const updateProfileSchema = z
@@ -348,6 +406,8 @@ export type StartSprintInput = z.input<typeof startSprintSchema>;
 export type CloseSprintInput = z.input<typeof closeSprintSchema>;
 export type AssignTaskToSprintInput = z.input<typeof assignTaskToSprintSchema>;
 export type CreateProfileInput = z.input<typeof createProfileSchema>;
+export type CreateProfileWithAccountInput = z.input<typeof createProfileWithAccountSchema>;
+export type CreateAccountForProfileInput = z.input<typeof createAccountForProfileSchema>;
 export type UpdateProfileInput = z.input<typeof updateProfileSchema>;
 
 export function parseDomainInput<TSchema extends z.ZodType>(

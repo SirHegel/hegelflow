@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
+import bcrypt from "bcryptjs";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   getActivity,
+  getAuditAdministrationData,
   getReportData,
   getSettingsData,
   getWorkspaceBoards,
@@ -11,6 +13,8 @@ import {
 } from "@/lib/data";
 import { prepareDatabaseConnection } from "@/lib/database-url";
 import { db } from "@/lib/db";
+import { createAccountForProfile, createProfileWithAccount } from "@/lib/domain/accounts";
+import { createProfile } from "@/lib/domain/boards";
 import { createTask, moveTask, updateTask } from "@/lib/domain/tasks";
 import type { WorkspaceContext } from "@/lib/types";
 
@@ -375,6 +379,113 @@ describe("PostgreSQL domain integration", () => {
       expect.arrayContaining(["Owner private view", "Member shared view"]),
     );
     expect(ownerSettings.savedViews.map((view) => view.name)).not.toContain("Member private view");
+  });
+
+  it("creates a login account and profile atomically only for the owner", async () => {
+    const suffix = randomUUID().slice(0, 8);
+    const username = `new.member-${suffix}`;
+    const password = "integration-password-2026";
+    const created = await createProfileWithAccount(ownerContext, {
+      fullName: `New Member ${suffix}`,
+      email: null,
+      workRole: "Developer",
+      accessLevel: "MEMBER",
+      account: { username: `  ${username.toUpperCase()}  `, password },
+    });
+
+    const [persisted] = await fixtureSql<{
+      username: string;
+      passwordHash: string;
+      membershipId: string;
+      userId: string;
+    }[]>`
+      SELECT
+        u.username,
+        u.password_hash AS "passwordHash",
+        m.id AS "membershipId",
+        m.user_id AS "userId"
+      FROM users u
+      JOIN memberships m ON m.user_id = u.id
+      WHERE u.id = ${created.account.id}
+        AND m.workspace_id = ${ids.workspace}
+    `;
+
+    expect(created.account.username).toBe(username);
+    expect(created.profile.userId).toBe(created.account.id);
+    expect(persisted).toMatchObject({
+      username,
+      membershipId: created.profile.id,
+      userId: created.account.id,
+    });
+    expect(await bcrypt.compare(password, persisted!.passwordHash)).toBe(true);
+
+    await expect(createProfileWithAccount(memberContext, {
+      fullName: "Denied account",
+      email: null,
+      workRole: "Developer",
+      accessLevel: "MEMBER",
+      account: { username: `denied-${suffix}`, password },
+    })).rejects.toMatchObject({ status: 403 });
+
+    await expect(createProfileWithAccount(ownerContext, {
+      fullName: "Atomic conflict",
+      email: null,
+      workRole: "Developer",
+      accessLevel: "MEMBER",
+      account: { username, password },
+    })).rejects.toMatchObject({ status: 409, code: "ACCOUNT_IDENTIFIER_CONFLICT" });
+
+    const [rolledBack] = await fixtureSql<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count
+      FROM memberships
+      WHERE workspace_id = ${ids.workspace}
+        AND full_name = 'Atomic conflict'
+    `;
+    expect(rolledBack?.count).toBe(0);
+  });
+
+  it("enables credentials for an existing profile once and blocks another owner", async () => {
+    const suffix = randomUUID().slice(0, 8);
+    const profile = await createProfile(ownerContext, {
+      fullName: `Operational ${suffix}`,
+      email: null,
+      workRole: "Developer",
+      accessLevel: "MEMBER",
+    });
+    const linked = await createAccountForProfile(ownerContext, {
+      membershipId: profile.id,
+      username: `operational-${suffix}`,
+      password: "another-integration-password",
+    });
+
+    expect(linked.profile.userId).toBe(linked.account.id);
+    await expect(createAccountForProfile(ownerContext, {
+      membershipId: profile.id,
+      username: `duplicate-link-${suffix}`,
+      password: "another-integration-password",
+    })).rejects.toMatchObject({ status: 409, code: "PROFILE_ACCOUNT_UNAVAILABLE" });
+    await expect(createProfile(ownerContext, {
+      fullName: `Second Owner ${suffix}`,
+      email: null,
+      workRole: "CEO",
+      accessLevel: "OWNER",
+    })).rejects.toMatchObject({ status: 403, code: "ROLE_ESCALATION_DENIED" });
+  });
+
+  it("revalidates OWNER before returning the security audit", async () => {
+    const action = `integration.audit.${randomUUID().slice(0, 8)}`;
+    await fixtureSql`
+      INSERT INTO security_audit_events (
+        workspace_id, user_id, membership_id, action, outcome, request_id
+      ) VALUES (
+        ${ids.workspace}, ${ids.ownerUser}, ${ids.owner}, ${action}, 'SUCCESS', ${randomUUID()}
+      )
+    `;
+
+    const ownerAudit = await getAuditAdministrationData(ownerContext);
+    expect(ownerAudit?.events.some((event) => event.action === action)).toBe(true);
+    expect(await getAuditAdministrationData(memberContext)).toBeNull();
+    expect(await getAuditAdministrationData({ ...memberContext, accessLevel: "OWNER" })).toBeNull();
   });
 
   it("rejects cross-workspace links at the database boundary", async () => {

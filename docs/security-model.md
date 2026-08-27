@@ -1,6 +1,6 @@
 # Modelo de seguridad de HegelFlow
 
-> Fecha de corte: 25 de agosto de 2026. El modelo se basa en la implementación del repositorio. Los controles administrados de Vercel y Neon —cifrado, backups, protección de despliegues, logs o alertas— solo pueden considerarse activos después de verificarlos en esas cuentas.
+> Fecha de corte: 27 de agosto de 2026. El modelo se basa en la implementación del repositorio. Los controles administrados de Vercel y Neon —cifrado, backups, protección de despliegues, logs o alertas— solo pueden considerarse activos después de verificarlos en esas cuentas.
 
 ## Objetivos
 
@@ -39,9 +39,8 @@ flowchart LR
 - Las contraseñas se almacenan con bcrypt, coste 12.
 - La verificación usa un hash señuelo cuando el usuario no existe o no tiene contraseña, para reducir diferencias temporales observables.
 - Los errores de login no distinguen entre usuario inexistente, deshabilitado o contraseña incorrecta.
-- El cambio de contraseña exige la actual, una nueva de 14 a 256 caracteres y que sean distintas. Revoca las demás sesiones, pero conserva la sesión desde la que se hizo el cambio.
-
-El seed acepta un mínimo de 12 caracteres, mientras el cambio de contraseña exige 14. Para operación se adopta el requisito más fuerte: 14 o más caracteres aleatorios. Unificar ambas reglas es trabajo pendiente.
+- El alta, el seed y el cambio de contraseña exigen al menos 14 caracteres y rechazan entradas que bcrypt truncaría después de 72 bytes UTF-8.
+- El cambio de contraseña exige además la actual y que la nueva sea distinta. Revoca las demás sesiones, pero conserva la sesión desde la que se hizo el cambio.
 
 ### Rate limit de login
 
@@ -104,12 +103,15 @@ Cada mutación vuelve a consultar la membresía y el usuario dentro de la transa
 | Crear tableros/columnas | Sí | Sí | No | No |
 | Crear, iniciar o completar sprints | Sí | Sí | No | No |
 | Crear o actualizar perfiles | Sí | Sí, con límites | No | No |
+| Crear o vincular credenciales de otra persona | Sí | No | No | No |
+| Consultar la consola de auditoría | Sí | No | No | No |
 | Activar o pausar automatizaciones | Sí | Sí | No | No |
 | Cambiar la propia contraseña | Sí | Sí | Sí | Sí |
 
 Restricciones adicionales:
 
 - un `ADMIN` no puede crear, modificar ni elevar perfiles `ADMIN` o `OWNER`;
+- solo `OWNER` puede crear cuentas o vincular credenciales y ningún flujo permite crear otro `OWNER`;
 - un `OWNER` no puede dejar al workspace sin otro propietario activo;
 - en un tablero `PRIVATE`, un `MEMBER` necesita acceso de tablero `ADMIN` o `MEMBER` para escribir; `OBSERVER` solo lee;
 - las tareas deben pertenecer al workspace y el tablero/columna/sprint indicado debe ser compatible;
@@ -159,10 +161,11 @@ Hay dos registros separados:
 - login bloqueado por rate limit;
 - logout;
 - cambio de contraseña exitoso o fallido.
+- creación de cuenta y vinculación de credenciales, incluidos intentos administrativos denegados.
 
-Conserva request id, referencias opcionales a usuario/sesión/membresía, hash de IP y metadata acotada. No guarda la contraseña, cookie, token ni cadena de conexión. Dos triggers de PostgreSQL impiden `UPDATE` y `DELETE`.
+Conserva request id, referencias opcionales a usuario/sesión/membresía, hash de IP y metadata acotada. Un sanitizador recursivo elimina claves sensibles antes de persistir metadata; las rutas de cuentas solo aportan identificadores y nivel de destino. No guarda la contraseña, cookie, token ni cadena de conexión. Dos triggers de PostgreSQL impiden `UPDATE` y `DELETE`.
 
-El registro es *best effort*: si falla no cambia la respuesta de autenticación y solo emite un mensaje genérico al runtime. Todavía no registra de forma central todos los `403`, cambios de rol, exportaciones o acciones administrativas, y no existe una vista protegida para que `OWNER` lo consulte. Tampoco hay política de retención o exportación.
+El registro de seguridad es *best effort*: si falla no cambia la respuesta y solo emite un mensaje genérico al runtime. `/settings/audit` muestra a `OWNER` métricas y los últimos 50 eventos relacionados con el workspace, después de revalidar en PostgreSQL la cuenta, membresía y rol. La consulta no selecciona IP, hash de IP, sesión ni metadata. Todavía no registra de forma central todos los `403`, cambios de rol o exportaciones, y no hay política de borrado ni exportación.
 
 ## Cabeceras del navegador
 
@@ -222,11 +225,11 @@ Pruebas actuales:
 - matriz de permisos y escalamiento de roles;
 - validadores de tareas, tableros, sprints y errores de dominio;
 - utilidades de interfaz.
-- integración PostgreSQL para ACL `PRIVATE`, atomicidad tarea+sprint, WIP/versiones, reportes, actividad/configuración, aislamiento entre workspaces y transiciones append-only.
+- integración PostgreSQL para ACL `PRIVATE`, atomicidad tarea+sprint y cuenta+perfil, WIP/versiones, reportes, actividad/configuración, aislamiento entre workspaces, guardas de auditoría y transiciones append-only.
 
 El gate `npm run audit:all` ejecuta auditoría de secretos, ESLint, generación/comprobación de tipos, Vitest con cobertura, build y `npm audit --audit-level=high`. GitHub Actions repite las etapas en pull requests y pushes a `main`, con permisos `contents: read`, instalación reproducible y timeout. Dependabot está configurado semanalmente para npm. `package.json` fija Node.js `>=20.9.0` y autoriza scripts de instalación únicamente para `esbuild@0.28.2` y `unrs-resolver@1.12.2`; cualquier cambio de esas versiones debe volver a revisarse.
 
-La migración, el seed repetible, 6 pruebas de integración PostgreSQL y un smoke HTTP autenticado pasaron localmente. La suite todavía debe ampliar de forma repetible:
+La suite PostgreSQL contiene 9 pruebas de integración y se ejecuta en CI sobre una base aislada. Todavía debe ampliar de forma repetible:
 
 - denegación de cada mutación por rol;
 - carreras simultáneas de WIP y sprint activo;
@@ -239,9 +242,9 @@ La migración, el seed repetible, 6 pruebas de integración PostgreSQL y un smok
 | Prioridad | Riesgo | Tratamiento requerido |
 | --- | --- | --- |
 | P0 | Lectura multi-tenant sin RLS | Pruebas multi-tenant y rol DB de mínimo privilegio; evaluar RLS |
-| P0 | Sin flujo seguro de alta/recuperación de cuentas | Invitaciones de un solo uso, expiración, recuperación y revocación |
+| P0 | Alta administrativa sin recuperación ni rotación inicial obligatoria | Invitaciones de un solo uso, expiración, recuperación y revocación |
 | P0 | Operación no verificada | Backups/PITR, migraciones controladas, logs, alertas y runbook |
-| P1 | Auditoría de seguridad parcial | Registrar denegaciones y cambios sensibles; vista/exportación solo OWNER |
+| P1 | Auditoría de seguridad parcial | Registrar denegaciones y cambios sensibles restantes; exportación solo OWNER |
 | P1 | Historial protegido pero sin retención/exportación | Definir retención, acceso y recuperación sin mutar eventos |
 | P1 | Sin MFA/SSO | MFA para propietarios; SSO/OIDC según tamaño del equipo |
 | P1 | E2E HTTP/navegador no automatizado de extremo a extremo | Convertir el smoke manual en un gate repetible y ampliar la matriz por rol |

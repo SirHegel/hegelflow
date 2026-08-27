@@ -19,6 +19,7 @@ import {
   Plus,
   Search,
   Settings2,
+  ShieldCheck,
   Sparkles,
   Users,
   X,
@@ -232,13 +233,26 @@ export function AppShell({ context, boards, syncRevision, children }: {
         </div>
       </div>
 
-      <div className="border-t border-white/8 p-3">
+      <div className="space-y-1 border-t border-white/8 p-3">
+        {context.accessLevel === "OWNER" ? (
+          <Link
+            href="/settings/audit"
+            onClick={() => setMobileOpen(false)}
+            className={cn(
+              "flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition",
+              pathname.startsWith("/settings/audit") ? "bg-violet-500/16 text-violet-200" : "text-slate-400 hover:bg-white/5 hover:text-white",
+            )}
+          >
+            <ShieldCheck className="size-[18px]" />
+            Administración y auditoría
+          </Link>
+        ) : null}
         <Link
           href="/settings"
           onClick={() => setMobileOpen(false)}
           className={cn(
             "flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition",
-            pathname.startsWith("/settings") ? "bg-white/7 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white",
+            pathname === "/settings" ? "bg-white/7 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white",
           )}
         >
           <Settings2 className="size-[18px]" />

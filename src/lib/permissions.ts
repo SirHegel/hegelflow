@@ -11,6 +11,7 @@ export const permissionSchema = z.enum([
   "member.invite",
   "member.update",
   "member.changeRole",
+  "account.manage",
   "board.read",
   "board.create",
   "board.update",
@@ -125,7 +126,8 @@ export function canManageAccessLevel(
   actor: AccessLevel,
   target: AccessLevel,
 ): boolean {
-  if (actor === "OWNER") return target !== "OWNER";
+  if (target === "OWNER") return false;
+  if (actor === "OWNER") return true;
   if (actor === "ADMIN") return accessRank[target] < accessRank.ADMIN;
   return false;
 }

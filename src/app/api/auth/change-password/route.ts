@@ -2,14 +2,18 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { apiFailure, apiSuccess, mutationContext } from "@/lib/api-mutation";
 import { db } from "@/lib/db";
-import { DomainError, parseDomainInput } from "@/lib/domain/validators";
+import {
+  accountPasswordSchema,
+  DomainError,
+  parseDomainInput,
+} from "@/lib/domain/validators";
 import { recordSecurityAudit } from "@/lib/security-audit";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.strictObject({
   currentPassword: z.string().min(1).max(256),
-  newPassword: z.string().min(14).max(256),
+  newPassword: accountPasswordSchema,
 }).superRefine((input, context) => {
   if (input.currentPassword === input.newPassword) {
     context.addIssue({ code: "custom", path: ["newPassword"], message: "La nueva contraseña debe ser diferente." });

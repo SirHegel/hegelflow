@@ -25,12 +25,20 @@ describe("RBAC", () => {
     expect(hasPermission("OWNER", "workspace.delete")).toBe(true);
   });
 
+  it("reserva la administración de credenciales al propietario", () => {
+    expect(hasPermission("OWNER", "account.manage")).toBe(true);
+    expect(hasPermission("ADMIN", "account.manage")).toBe(false);
+    expect(hasPermission("MEMBER", "account.manage")).toBe(false);
+    expect(hasPermission("VIEWER", "account.manage")).toBe(false);
+  });
+
   it("impide escalamiento de roles por administradores", () => {
     expect(canManageAccessLevel("ADMIN", "MEMBER")).toBe(true);
     expect(canManageAccessLevel("ADMIN", "ADMIN")).toBe(false);
     expect(canManageAccessLevel("ADMIN", "OWNER")).toBe(false);
     expect(canManageAccessLevel("OWNER", "ADMIN")).toBe(true);
     expect(canManageAccessLevel("OWNER", "OWNER")).toBe(false);
+    expect(canManageAccessLevel("MEMBER", "OWNER")).toBe(false);
+    expect(canManageAccessLevel("VIEWER", "OWNER")).toBe(false);
   });
 });
-

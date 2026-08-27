@@ -1,8 +1,8 @@
 # HegelFlow
 
-HegelFlow es una aplicación personal para delegar, priorizar y seguir trabajo con Scrum y Kanban. El repositorio contiene una aplicación web funcional con autenticación propia, tableros, backlog, sprints, calendario, reportes, perfiles de trabajo y trazabilidad sobre PostgreSQL.
+HegelFlow es una aplicación multiusuario para delegar, priorizar y seguir trabajo con Scrum y Kanban. El repositorio contiene una aplicación web funcional con autenticación propia, tableros, backlog, sprints, calendario, reportes, perfiles de trabajo y trazabilidad sobre PostgreSQL.
 
-> Producción personal verificada el 25 de agosto de 2026 en [hegelflow.vercel.app](https://hegelflow.vercel.app), con Vercel Hobby y Neon Free en `iad1`. El smoke autenticado confirmó login, páginas privadas, búsqueda, CSRF, cookie segura, logout y revocación de sesión.
+> Producción disponible en [hegelflow.vercel.app](https://hegelflow.vercel.app), con Vercel Hobby y Neon Free. El despliegue conserva secretos únicamente en el entorno administrado, fuera del repositorio.
 
 ## Qué funciona hoy
 
@@ -16,6 +16,8 @@ HegelFlow es una aplicación personal para delegar, priorizar y seguir trabajo c
 - Reportes base de burndown, velocidad, distribución por estado/prioridad y tiempo de ciclo.
 - Cronología de actividad, búsqueda global, perfiles de trabajo y capacidad.
 - Roles `OWNER`, `ADMIN`, `MEMBER` y `VIEWER`, separados del cargo laboral.
+- Alta atómica de cuenta y perfil, o habilitación posterior de credenciales, reservada al `OWNER`.
+- Consola de administración y auditoría visible únicamente para `OWNER`, con eventos de seguridad append-only.
 - Tableros de workspace o privados, con ACL explícita por miembro de tablero.
 - Esquema para comentarios, checklists, adjuntos, dependencias, campos personalizados, vistas, notificaciones, invitaciones y automatizaciones. Algunas de estas capacidades aún no tienen flujo completo de interfaz o ejecución; consulte [Alcance del producto](docs/product-scope.md).
 
@@ -70,7 +72,7 @@ Variables:
 | `DATABASE_URL` | Conexión PostgreSQL | Sí |
 | `APP_URL` | Origen canónico adicional para validar mutaciones | Recomendada |
 | `BOOTSTRAP_ADMIN_USERNAME` | Usuario creado o actualizado por el seed | No; solo durante el seed |
-| `BOOTSTRAP_ADMIN_PASSWORD` | Contraseña inicial, con mínimo de 12 caracteres | No; solo durante el seed |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Contraseña inicial, mínimo 14 caracteres y máximo 72 bytes UTF-8 | No; solo durante el seed |
 
 No use credenciales reales en archivos versionados, incidencias, capturas o logs. Para un entorno compartido use una contraseña aleatoria de al menos 14 caracteres y retire las variables `BOOTSTRAP_*` después del seed.
 
@@ -117,7 +119,7 @@ Abra [http://localhost:3000](http://localhost:3000). Inicie sesión con las cred
 
 `audit:secrets` es una defensa preventiva, no sustituye un escáner de secretos con historial Git ni la rotación inmediata de una credencial expuesta.
 
-En la verificación local del 25 de agosto de 2026 pasaron 26 pruebas unitarias y 6 pruebas de integración PostgreSQL. También se validaron una migración limpia en PostgreSQL 18, la repetición de migración/seed, login y páginas autenticadas, mutaciones de tarea, conflicto optimista, comentarios, checklist, búsqueda, archivado y snapshots de transición. `audit:all` terminó con lint/tipos/build en verde y 0 vulnerabilidades de npm. La cobertura unitaria global sigue baja —20,19 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
+En la verificación local del 27 de agosto de 2026 pasaron 40 pruebas unitarias; `audit:all` terminó con secretos, lint, tipos, cobertura, build y dependencias en verde, con 0 vulnerabilidades de npm. La suite PostgreSQL contiene 9 casos y se ejecuta en GitHub Actions sobre PostgreSQL 18. La cobertura unitaria global sigue baja —22,86 % de sentencias—, por lo que ampliar casos de dominio y automatizar el E2E HTTP completo continúa en el roadmap.
 
 ## Despliegue en Vercel + Neon
 
@@ -133,7 +135,7 @@ Cambiar una variable en Vercel solo afecta despliegues nuevos; vuelva a desplega
 
 ## Límites conocidos
 
-- No hay aprovisionamiento completo de cuentas: crear un perfil operativo no crea automáticamente un usuario con login.
+- El `OWNER` puede crear credenciales iniciales, pero todavía no hay invitación de un solo uso, recuperación de contraseña, rotación inicial obligatoria ni revocación administrativa de sesiones.
 - Los tableros `PRIVATE` se filtran por rol/ACL en las vistas principales, pero todavía no hay interfaz para administrar `board_members` ni pruebas negativas automatizadas de todos los read paths.
 - No existe Row-Level Security en PostgreSQL; el aislamiento de lectura depende de la aplicación, complementado por triggers que rechazan asociaciones cruzadas entre workspaces.
 - Automatizaciones, invitaciones, notificaciones y adjuntos están modelados, pero no tienen ejecución o flujo completo.

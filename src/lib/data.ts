@@ -501,8 +501,10 @@ export async function getWorkspaceRevision(
 export async function getTeamData(workspaceId: string, membershipId: string, accessLevel: AccessLevel) {
   const sql = db();
   const canSeeAllBoards = accessLevel === "OWNER" || accessLevel === "ADMIN";
+  const canReadAccountIdentity = accessLevel === "OWNER";
   return sql<{
     id: string;
+    username: string | null;
     fullName: string;
     workRole: string;
     accessLevel: string;
@@ -516,6 +518,7 @@ export async function getTeamData(workspaceId: string, membershipId: string, acc
   }[]>`
     SELECT
       m.id,
+      CASE WHEN ${canReadAccountIdentity} THEN u.username ELSE NULL END AS username,
       m.full_name AS "fullName",
       m.work_role AS "workRole",
       m.access_level AS "accessLevel",
@@ -527,6 +530,7 @@ export async function getTeamData(workspaceId: string, membershipId: string, acc
       COALESCE(SUM(t.story_points) FILTER (WHERE t.completed_at IS NULL AND t.archived_at IS NULL), 0)::int AS "activePoints",
       COUNT(t.id) FILTER (WHERE t.completed_at IS NOT NULL AND t.archived_at IS NULL)::int AS "completedTasks"
     FROM memberships m
+    LEFT JOIN users u ON u.id = m.user_id
     LEFT JOIN task_assignees ta ON ta.membership_id = m.id
     LEFT JOIN tasks t ON t.id = ta.task_id AND EXISTS (
       SELECT 1 FROM boards b
@@ -541,11 +545,136 @@ export async function getTeamData(workspaceId: string, membershipId: string, acc
         )
     )
     WHERE m.workspace_id = ${workspaceId}
-    GROUP BY m.id
+    GROUP BY m.id, u.username
     ORDER BY
       CASE m.access_level WHEN 'OWNER' THEN 0 WHEN 'ADMIN' THEN 1 ELSE 2 END,
       m.full_name
   `;
+}
+
+export type AuditAdministrationData = {
+  metrics: {
+    activeAccounts: number;
+    profilesWithoutAccount: number;
+    eventsLast24Hours: number;
+    deniedLast24Hours: number;
+  };
+  events: Array<{
+    id: string;
+    action: string;
+    outcome: "SUCCESS" | "FAILURE" | "DENIED";
+    requestId: string;
+    createdAt: string;
+    actorName: string | null;
+    actorUsername: string | null;
+    actorColor: string | null;
+  }>;
+};
+
+export async function getAuditAdministrationData(
+  context: WorkspaceContext,
+): Promise<AuditAdministrationData | null> {
+  if (!hasPermission(context.accessLevel, "audit.read")) return null;
+
+  return db().begin(async (transaction) => {
+    const [authorizedActor] = await transaction<{ id: string }[]>`
+      SELECT m.id
+      FROM memberships m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.id = ${context.membershipId}
+        AND m.workspace_id = ${context.workspaceId}
+        AND m.user_id = ${context.userId}
+        AND m.access_level = 'OWNER'
+        AND m.status = 'ACTIVE'
+        AND u.status = 'ACTIVE'
+      FOR SHARE OF m, u
+    `;
+    if (!authorizedActor) return null;
+
+    const [accountMetrics] = await transaction<{
+      activeAccounts: number;
+      profilesWithoutAccount: number;
+    }[]>`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE m.status = 'ACTIVE'
+            AND u.status = 'ACTIVE'
+            AND u.password_hash IS NOT NULL
+        )::int AS "activeAccounts",
+        COUNT(*) FILTER (WHERE m.user_id IS NULL)::int AS "profilesWithoutAccount"
+      FROM memberships m
+      LEFT JOIN users u ON u.id = m.user_id
+      WHERE m.workspace_id = ${context.workspaceId}
+    `;
+
+    const [auditMetrics] = await transaction<{
+      eventsLast24Hours: number;
+      deniedLast24Hours: number;
+    }[]>`
+      SELECT
+        COUNT(*)::int AS "eventsLast24Hours",
+        COUNT(*) FILTER (WHERE event.outcome = 'DENIED')::int AS "deniedLast24Hours"
+      FROM security_audit_events event
+      WHERE event.created_at >= NOW() - INTERVAL '24 hours'
+        AND (
+          event.workspace_id = ${context.workspaceId}
+          OR (
+            event.workspace_id IS NULL
+            AND event.user_id IS NOT NULL
+            AND EXISTS (
+              SELECT 1
+              FROM memberships related_membership
+              WHERE related_membership.workspace_id = ${context.workspaceId}
+                AND related_membership.user_id = event.user_id
+            )
+          )
+        )
+    `;
+
+    const events = await transaction<AuditAdministrationData["events"]>`
+      SELECT
+        event.id,
+        event.action,
+        event.outcome,
+        event.request_id AS "requestId",
+        event.created_at::text AS "createdAt",
+        COALESCE(direct_profile.full_name, account_profile.full_name, actor.display_name) AS "actorName",
+        actor.username AS "actorUsername",
+        COALESCE(direct_profile.avatar_color, account_profile.avatar_color, actor.avatar_color) AS "actorColor"
+      FROM security_audit_events event
+      LEFT JOIN memberships direct_profile
+        ON direct_profile.id = event.membership_id
+        AND direct_profile.workspace_id = ${context.workspaceId}
+      LEFT JOIN memberships account_profile
+        ON account_profile.user_id = event.user_id
+        AND account_profile.workspace_id = ${context.workspaceId}
+      LEFT JOIN users actor
+        ON actor.id = event.user_id
+        AND (
+          actor.id = direct_profile.user_id
+          OR actor.id = account_profile.user_id
+        )
+      WHERE
+        event.workspace_id = ${context.workspaceId}
+        OR (
+          event.workspace_id IS NULL
+          AND event.user_id IS NOT NULL
+          AND account_profile.id IS NOT NULL
+        )
+      ORDER BY event.created_at DESC, event.id DESC
+      LIMIT 50
+    `;
+
+    return {
+      metrics: {
+        activeAccounts: accountMetrics?.activeAccounts ?? 0,
+        profilesWithoutAccount: accountMetrics?.profilesWithoutAccount ?? 0,
+        eventsLast24Hours: auditMetrics?.eventsLast24Hours ?? 0,
+        deniedLast24Hours: auditMetrics?.deniedLast24Hours ?? 0,
+      },
+      events,
+    };
+  });
 }
 
 export async function getReportData(workspaceId: string, membershipId: string, accessLevel: AccessLevel) {

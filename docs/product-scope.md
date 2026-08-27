@@ -1,6 +1,6 @@
 # Alcance de producto de HegelFlow
 
-> Fecha de corte: 25 de agosto de 2026. Este documento distingue lo usable en la interfaz, lo disponible solo por API/dominio, lo que existe únicamente en PostgreSQL y lo que sigue en roadmap.
+> Fecha de corte: 27 de agosto de 2026. Este documento distingue lo usable en la interfaz, lo disponible solo por API/dominio, lo que existe únicamente en PostgreSQL y lo que sigue en roadmap.
 
 ## Objetivo
 
@@ -42,8 +42,9 @@ Una tabla por sí sola no convierte una capacidad en producto terminado. Para co
 | Reportes | Estado, prioridad, velocidad, cycle time y burndown | Primera versión; requiere validar fórmulas históricas |
 | Actividad | Cronología de cambios de negocio | Hasta 100 eventos recientes en la vista |
 | Búsqueda | Título, descripción y clave de tarea | Resultados del workspace, máximo 12 |
-| Equipo | Ver personas, roles, capacidad y carga; crear perfil | El perfil nuevo es operativo y no obtiene login automáticamente |
+| Equipo | Ver personas, roles, capacidad y carga; crear perfil o cuenta | `OWNER` crea cuenta+perfil o habilita un perfil existente; `ADMIN` solo crea perfiles operativos |
 | Configuración | Ver reglas, campos y vistas; activar/pausar reglas; cambiar contraseña | Guardado de workspace y creación de reglas/campos aún no están conectados |
+| Administración y auditoría | Métricas de cuentas, políticas efectivas y últimos eventos de seguridad | Enlace, página y consulta exclusivos de `OWNER`; sin credenciales, IP ni metadata interna |
 
 ### Backend disponible sin flujo completo
 
@@ -63,7 +64,7 @@ Una tabla por sí sola no convierte una capacidad en producto terminado. Para co
 - notificaciones;
 - invitaciones con token hash y expiración;
 - reglas de automatización, contadores y última ejecución;
-- exportación, integraciones y permisos de auditoría.
+- exportación e integraciones.
 
 La ACL privada ya existe en las vistas principales y el dominio. Las pruebas de integración cubren tableros, reportes de sprint, actividad y configuración, y el smoke HTTP cubre búsqueda; sigue siendo un control de aplicación sin RLS y requiere una matriz E2E exhaustiva antes de considerarse una frontera plenamente auditada.
 
@@ -78,6 +79,7 @@ La ACL privada ya existe en las vistas principales y el dominio. Las pruebas de 
 - Transacciones, bloqueos de filas, límite WIP y versión optimista para tareas.
 - Activity log transaccional y eventos append-only de movimiento, cambio de sprint y cambio de estimación.
 - Auditoría de seguridad separada y protegida contra actualización o borrado.
+- Alta multiusuario transaccional y consola de auditoría con doble comprobación `OWNER`.
 - ACL de tablero privado y triggers que rechazan relaciones cruzadas entre workspaces.
 - CSP y cabeceras defensivas globales.
 - Pruebas unitarias de seguridad HTTP, RBAC, validadores y utilidades.
@@ -104,7 +106,7 @@ La base actual es una **alpha interna funcional**. Para considerarla MVP operati
 
 ### Acceso y delegación
 
-- alta de una cuenta vinculada a un perfil mediante invitación de un solo uso;
+- invitación de un solo uso o rotación inicial obligatoria sobre las cuentas que hoy aprovisiona `OWNER`;
 - edición de nombre, cargo, capacidad, estado y nivel según jerarquía;
 - recuperación de contraseña y revocación administrativa de sesiones;
 - selección de workspace cuando un usuario pertenece a más de uno.
@@ -141,7 +143,7 @@ La base actual es una **alpha interna funcional**. Para considerarla MVP operati
 
 - Completar administración y matriz E2E de la ACL `PRIVATE` en todas las rutas.
 - Ampliar la integración PostgreSQL y automatizar E2E de autorización.
-- Completar creación/edición de perfiles y alta de cuentas.
+- Completar edición de perfiles y gestión administrativa del ciclo de vida de las cuentas.
 - Conectar los botones actualmente informativos de workspace, tableros y configuración.
 - Validar migración y seed en bases vacías y ya migradas.
 - Establecer Vercel Preview + Neon branch sin compartir producción.
@@ -154,7 +156,7 @@ La base actual es una **alpha interna funcional**. Para considerarla MVP operati
 - Comentarios y checklists completos en la tarea.
 - Invitaciones, recuperación de contraseña y gestión de sesiones.
 - “Mi trabajo”, filtros guardados y navegación multitablero.
-- Exportación CSV básica y vista de auditoría para `OWNER`.
+- Exportación CSV básica y exportación controlada de auditoría para `OWNER`.
 - Reportes Scrum/Kanban corregidos y respaldados por pruebas históricas.
 
 ### Fase 2 — Flujo avanzado
@@ -239,7 +241,7 @@ Una guarda debe tener motivo técnico, error accionable y observabilidad. Nunca 
 - Ocultar un botón no concede ni revoca acceso.
 - Cada lectura y mutación debe aplicar workspace, membresía y permiso en servidor.
 - Los secretos viven fuera de Git y los datos sensibles no aparecen en logs.
-- Un perfil operativo no equivale a una cuenta autenticable.
+- Un perfil operativo no equivale a una cuenta autenticable; `OWNER` decide si crea o vincula sus credenciales.
 
 ### Archivado antes que borrado
 

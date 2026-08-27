@@ -7,8 +7,12 @@ const configuredAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
 const adminUsername = process.env.BOOTSTRAP_ADMIN_USERNAME ?? "SirHegel";
 
 if (!databaseUrl) throw new Error("DATABASE_URL es obligatorio.");
-if (!configuredAdminPassword || configuredAdminPassword.length < 12) {
-  throw new Error("BOOTSTRAP_ADMIN_PASSWORD debe tener al menos 12 caracteres.");
+if (
+  !configuredAdminPassword
+  || configuredAdminPassword.length < 14
+  || bcrypt.truncates(configuredAdminPassword)
+) {
+  throw new Error("BOOTSTRAP_ADMIN_PASSWORD debe tener entre 14 caracteres y 72 bytes UTF-8.");
 }
 const adminPassword: string = configuredAdminPassword;
 
